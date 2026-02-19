@@ -1,0 +1,239 @@
+---
+description: Webflow Shared Libraries PRD - comprehensive product requirements, architecture, user flows, governance, and technical constraints for the Shared Libraries feature
+alwaysApply: true
+---
+
+# Webflow Shared Libraries: Comprehensive Product Requirement Document and Technical Architecture Analysis
+
+## 1. Executive Summary and Strategic Context
+
+### 1.1 Report Objectives and Scope
+
+This document serves as a comprehensive Product Requirement Document (PRD) and technical analysis of Webflow's Shared Libraries architecture. It allows product managers, systems architects, and enterprise design leaders to understand the functional capabilities, user intents, and end-to-end workflows associated with the feature. The objective is to define how Shared Libraries function as the central nervous system for multi-site design governance, enabling organizations to scale visual identity while minimizing technical debt.
+
+The scope of this report encompasses the entire lifecycle of a Shared Library—from the initial architectural definition of atomic design tokens (Variables) to the governance of component consumption across distributed teams. It analyzes the specific technical mechanisms that enforce brand consistency, the role-based access controls that secure the design system, and the limitations that architects must navigate to ensure a successful implementation.
+
+### 1.2 The Strategic Value of System-Based Design
+
+Historically, web design operated on a "page-based" paradigm, where individual pages were constructed in isolation. In an enterprise context, this led to significant fragmentation. A change in a brand's primary color or typography required manual updates across potentially hundreds of disjointed pages and microsites. Webflow Shared Libraries introduce a "system-based" paradigm, utilizing a "Hub and Spoke" architecture where a single Webflow site serves as the **Source of Truth**.
+
+The strategic value proposition rests on three pillars:
+
+1. **Unified Visual Identity:** The system ensures that brand assets, components, and variables are consistent across all web properties. Updates cascade from the central hub to all connected spokes, guaranteeing that a rebrand or style update is propagated instantly across the entire digital estate.
+2. **Operational Efficiency:** For agencies and internal product teams, Shared Libraries reduce development time by approximately 15% by eliminating the redundant recreation of foundational elements. This allows high-velocity teams to ship marketing campaigns and landing pages significantly faster.
+3. **Governance and Guardrails:** The architecture decouples the "creation" of design systems from the "consumption" of them. This separation of concerns empowers Marketers to build pages rapidly using approved, "safe" components without the risk of breaking the core design system or introducing off-brand styles.
+
+## 2. Product Definition and System Architecture
+
+### 2.1 Technical Definition
+
+A Shared Library in Webflow is a designated collection of **Components**, **Variables**, and **Assets** hosted on a specific "Source Site" that can be installed and consumed by other sites ("Consumer Sites") within the same Workspace. It is not merely a copy-paste repository; it is a live, synced dependency.
+
+The architecture operates on a strict **unidirectional data flow**:
+
+* **Source Site:** The authoritative environment where the library's core structure (component HTML/CSS, variable values, asset files) is defined and modified. Only users with specific permissions on the Source Site can trigger updates.
+* **Consumer Site:** Any site within the Workspace that installs the library. These sites receive read-only instances of the library elements. While consumers can override specific content (via Props) or style toggles (via Variants), they cannot alter the fundamental structure of the component, ensuring architectural integrity.
+
+### 2.2 Infrastructure Prerequisites and Plan Dependencies
+
+The capability to deploy Shared Libraries is gated by Workspace-level infrastructure. It is critical to note that Shared Libraries are a paid feature, unavailable on free Starter plans. This gating ensures that the feature is positioned for professional and enterprise use cases where multi-site governance is a necessity.
+
+| Workspace Plan | Shared Library Capability | Strategic Implication |
+| :---- | :---- | :---- |
+| **Starter** | 0 Libraries | Restricted to prototyping; no cross-site scalability. |
+| **Freelancer** | 1 Library | Suitable for a single client style guide or personal portfolio network. |
+| **Core** | 1 Library | Limited scalability; forces a choice between a "Drafting" library or a "Production" library. |
+| **Growth** | 1 Library | Sufficient for single-brand mid-sized companies but limits multi-brand architecture. |
+| **Agency** | Unlimited | Designed for high-volume client management and "Starter Kit" distribution. |
+| **Enterprise** | Unlimited | Supports complex multi-brand architectures and departmental design systems. |
+
+This tiered access model dictates the architectural approach. An Agency, for example, can create distinct "Starter Kits" for different verticals (e.g., "Restaurant Starter," "Legal Starter"), whereas a Freelancer is limited to a single, monolithic library. Enterprise plans further differentiate themselves by offering "Auto-install" capabilities, enforcing library adoption across the organization.
+
+## 3. User Personas and Intent Analysis
+
+To accurately map product requirements, we must define the users interacting with the system. The Shared Library ecosystem creates a bifurcation of roles: **Library Maintainers** (Producers) and **Library Consumers**. Understanding these personas is essential for configuring permissions and workflows.
+
+### 3.1 Persona A: The Systems Architect (Library Maintainer)
+
+**Role Alignment:** Workspace Owner, Admin, Site Manager, or Lead Designer.
+
+**Core Motivation:** The Systems Architect is driven by the need for consistency, scalability, and maintainability. They view the design system as a product in itself, serving internal customers (Marketers and Developers).
+
+**User Intent:** "I need to update the primary button color once and have it reflect across our marketing site, support portal, and blog instantly without manual intervention."
+
+**Key Responsibilities:**
+
+* Defining the atomic design tokens (Variables) that underpin the brand.
+* Building robust, flexible components with Slots and Props that accommodate various content needs.
+* Managing the release cycle (Publishing updates) and maintaining the changelog.
+* Documenting the system for consumers to ensure correct usage.
+
+### 3.2 Persona B: The Campaign Marketer (Library Consumer)
+
+**Role Alignment:** Marketer, Content Editor (Limited scope).
+
+**Core Motivation:** Speed to market and autonomy. The Marketer wants to launch campaigns without being bottlenecked by design or engineering resources.
+
+**User Intent:** "I want to build a landing page for a new Q3 campaign today using pre-approved blocks, without needing to know HTML/CSS or ask for permission."
+
+**Key Responsibilities:**
+
+* Assembling pages using pre-built "Hero," "Feature," and "CTA" sections from the library.
+* Overriding text and images within components using Props.
+* **Constraint:** The Marketer *cannot* install or uninstall libraries; they can only utilize what the Architect has made available. This limitation is a critical security feature, preventing unauthorized dilution of the brand assets.
+
+### 3.3 Persona C: The Agency Developer (External Partner)
+
+**Role Alignment:** Agency/Freelancer Guest.
+
+**Core Motivation:** Efficiency and handover quality. Agencies use libraries to speed up the initial build and ensure they hand over a maintainable site to the client.
+
+**User Intent:** "I want to use a standardized 'Agency Starter' library to bootstrap a client's project, then potentially detach it to hand off a standalone site."
+
+**Key Responsibilities:**
+
+* Rapid scaffolding of new sites using a centralized library of best-practice components.
+* Unlinking components for client-specific customization when the client requires deviation from the agency standard.
+* Managing version control across multiple client workspaces, often navigating the limitation that libraries cannot be shared *between* workspaces.
+
+## 4. Functional Capabilities and Requirements
+
+### 4.1 Component Sharing and Configuration
+
+Components are the structural building blocks of the design system. To be viable for a Shared Library, components must be architected for flexibility, allowing consumers to use them in various contexts without modifying the underlying code.
+
+**Requirement 4.1.1 - Component Props:**
+
+The system must support "Props" (properties) to allow consumers to modify content without altering structure. This includes:
+
+* **Text Props:** Allowing users to change headlines, button text, and paragraph content.
+* **Image Props:** Enabling the swapping of icons, hero images, and avatars.
+* **Visibility Props:** Allowing consumers to toggle elements on or off (e.g., hiding a secondary button in a CTA block).
+* *Insight:* Props are the primary mechanism for "Guardrails." By exposing only specific elements as props, the Architect prevents the Marketer from breaking the layout.
+
+**Requirement 4.1.2 - Component Slots:** The system allows for "Slots," enabling consumers to nest arbitrary content within a strict layout. For example, a "Modal" component might have a rigid header and footer but a "Slot" for the body content.
+
+**Requirement 4.1.3 - Variants:** The library must support style variants (e.g., Primary vs. Secondary button, Vertical vs. Horizontal card). These are manageable via a dropdown menu on the consumer site, allowing for instant visual changes that adhere to predefined styles.
+
+**Requirement 4.1.4 - Interaction Constraints:** Complex animations using GSAP (IX3) are not supported in Shared Libraries. Only "Classic" interactions transfer reliably. This requires Architects to strip complex JS-based animations from shared primitives or rely on native CSS transitions where possible.
+
+**Requirement 4.1.5 - Exclusion of Dynamic Data:** The system explicitly **excludes** CMS-bound elements. Components containing Collection Lists cannot be shared. This creates a requirement for "Skeleton" components where the CMS binding happens locally on the consumer site.
+
+### 4.2 Variable Management (Design Tokens)
+
+Variables act as the DNA of the design system, controlling values rather than pixels. They are the most efficient way to maintain brand consistency.
+
+**Requirement 4.2.1 - Atomic Tokenization:** The system shares primitive values (Colors, Fonts, Sizes) and semantic values (e.g., Brand-Primary, Text-Muted). This abstraction allows the Architect to change the hex code of Brand-Primary in one place, updating every component that references it.
+
+**Requirement 4.2.2 - Variable Modes:** The system supports "Modes" (e.g., Light Mode, Dark Mode, High Contrast). This enables a single library to power multiple brand themes. A consumer site can switch a variable mode at the <body> level to instantly re-theme the entire UI.
+
+**Requirement 4.2.3 - Responsive Variables:** Variables must support breakpoint-specific values. For example, a Spacing-L variable might be 64px on Desktop and 32px on Mobile. These responsive behaviors are preserved when shared.
+
+### 4.3 Asset Management
+
+Assets refer to static files such as logos, icons, and standard photography. Management of these assets is critical to prevent "asset sprawl" and ensure that only approved imagery is used.
+
+**Requirement 4.3.1 - Source-Only Management:** Assets can only be renamed, replaced, or deleted on the Source Site. Consumer sites have read-only access to the asset panel of the library.
+
+**Requirement 4.3.2 - Local Duplication:** If a Consumer needs to edit an asset, they must "Duplicate" it to their local site assets. This action breaks the link to the library, creating a safe, isolated copy for local use.
+
+**Requirement 4.3.3 - Folder Selection ("Asset Settings"):** During the sharing process, the Architect allows for granular control over which assets are shared. Using "Asset Settings," the Architect can select specific folders to include while excluding others.
+
+## 5. End-to-End User Flows
+
+### 5.1 Flow A: Initialization and Publishing (The Architect's Workflow)
+
+1. **Site Creation:** The Architect creates a new Webflow site specifically named "{Organization} Design System."
+2. **Asset Definition:** The Architect uploads core brand assets and organizes them into named folders.
+3. **Variable Definition:** The Architect defines the color palette and typography in the Variables panel, utilizing Variable Modes for different themes.
+4. **Component Construction:** The Architect builds components, defines Props for customization, defines Slots for flexibility, and tests "Classic" interactions.
+5. **Library Activation:** The Architect opens the Libraries Panel (shortcut L), selects "Share with Workspace," configures Asset Settings, and clicks "Share Library."
+6. **Outcome:** The site is now designated as a Source Site, locked to the workspace as the upstream provider for all dependencies.
+
+### 5.2 Flow B: Consumption and Assembly (The Marketer's Workflow)
+
+1. **Site Access:** The Marketer logs into a site within the same Workspace.
+2. **Installation (Prerequisite):** An Admin or Designer must install the library first (Marketers lack this permission).
+3. **Assembly:** The Marketer opens the "Add" panel, navigates to the installed library section, and drags components onto the canvas. CSS classes are automatically namespaced to prevent conflicts.
+4. **Customization:** The Marketer modifies Props (text, images) but cannot alter the component structure.
+5. **Publishing:** The Marketer publishes the site with styles from the Source Site.
+
+### 5.3 Flow C: The Update Cycle (Change Management)
+
+1. **Modification (Source):** The Architect changes a variable on the Source Site.
+2. **Pushing Updates:** The Architect opens Libraries Panel, clicks "Review Updates," adds a changelog note, and clicks "Share Updates."
+3. **Notification (Consumer):** The Consumer Site shows a blue notification dot on the Libraries icon.
+4. **Review and Acceptance:** The Designer/Admin reviews changes and can "Accept All" or review individually. Updates are all-or-nothing per component.
+5. **Propagation:** Upon acceptance, the changes update on the Consumer Site.
+
+### 5.4 Flow D: Detachment and Unlinking
+
+1. **Identification:** A specific page requires a component different from the corporate standard.
+2. **Unlinking:** The Designer selects the instance, right-clicks, and selects "Unlink Instance."
+3. **Outcome:** The component becomes a standard local component, severed from the Source Site. Future updates will not affect it.
+
+## 6. Governance, Roles, and Security
+
+### 6.1 Role-Based Access Control (RBAC) Matrix
+
+| Action | Owner / Admin | Site Manager | Designer | Marketer | Content Editor |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+| **Create/Share Library** | Yes | No | Yes* | No | No |
+| **Install Library** | Yes | Yes | Yes | No | No |
+| **Accept Updates** | Yes | Yes | Yes | No | No |
+| **Use Shared Elements** | Yes | Yes | Yes | Yes (If installed) | No |
+| **Unlink/Detach** | Yes | Yes | Yes | No | No |
+| **Manage Source Assets** | Yes | No | Yes | No | No |
+
+* Designers can share libraries but cannot manage Workspace billing/plans.
+* Marketers are strictly consumers—cannot introduce new design systems or alter links.
+* Content Editors are limited to CMS and simple text edits; they do not interact with the Libraries panel.
+
+### 6.2 Enterprise Auto-Install
+
+For Enterprise plans, "Auto-Install" mandates that specific libraries are automatically installed on all new sites within the workspace—ensuring day-zero compliance with brand standards.
+
+### 6.3 Governance Limitations
+
+* **No Granular Permissions within Library:** No "View Only" permission for libraries. If a user has "Designer" role, they can detach instances.
+* **Workspace Boundary:** Libraries cannot be shared across different Workspaces. An Agency cannot share their "Master Library" with a Client's Workspace directly.
+
+## 7. Technical Constraints and System Limitations
+
+### 7.1 The "CSS Namespacing" Constraint
+
+When a library is installed, Webflow automatically namespaces CSS classes to prevent collision. Custom code targeting original class names will fail on shared components. Architects must use Custom Properties (Variables) for styling rather than class-name-based custom CSS overrides.
+
+### 7.2 The "Dynamic Data" Gap (CMS Integration)
+
+Shared Libraries cannot contain CMS Collection Lists or bindings. The Architect must provide "Static Template" / "Skeleton" components. The Consumer manually binds Props to their local CMS fields.
+
+### 7.3 Source Site Dependency and Migration
+
+The library is linked to the site ID of the Source Site. You cannot "move" a library to a new site. If the Source Site is archived or deleted, the library connection is severed for all consumers.
+
+### 7.4 Recursive and Circular Dependencies
+
+* A site can either be a "Source" or a "Consumer," but not both (no daisy-chaining).
+* Shared Libraries cannot be installed on a site already shared as a Library itself.
+
+## 8. Best Practices and Implementation Strategy
+
+### 8.1 The "Documentation Site" Strategy
+
+The Source Site should serve as a publishable Style Guide with dedicated pages for each component category and usage documentation.
+
+### 8.2 The "Starter Kit" vs. "Permanent Link" Model
+
+* **Permanent Link:** Library remains installed for ongoing updates (default Design System model).
+* **Starter Kit:** Library is installed, elements are dragged in, then immediately uninstalled—converting everything to local components.
+
+### 8.3 Variable Taxonomy and Semantic Naming
+
+* **Bad Practice:** Naming a variable `Red-500` (breaks if brand rebrands to Blue).
+* **Best Practice:** Name variables by function: `Brand-Primary`, `Action-Color`.
+* **Advanced:** Use "Primitive" collections (e.g., `Color/Blue-500`) and "Semantic" collections (e.g., `Button/Background` aliased to `Color/Blue-500`).
+
+### 8.4 Accessibility and Testing
+
+All components must be tested for WCAG compliance before sharing. Use the "Audit" panel on the Source Site to catch accessibility errors before pushing updates.

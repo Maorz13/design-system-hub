@@ -1,0 +1,220 @@
+---
+description: Design System Hub (DSH) technical implementation document - database schema, backend logic, frontend components, feature details, and user flows for the standalone design system platform
+alwaysApply: true
+---
+
+# Technical Implementation Document: Standalone Design System Hub
+
+## 1. Product Overview
+
+**Product Name:** Design System Hub (DSH)
+
+**Objective:** A centralized platform allowing organizations to create "Source" design libraries (Components, Variables, Assets) and consume them across multiple "Consumer" sites with strict governance, unidirectional updates, and role-based access control.
+
+### Core Architecture
+
+* **Paradigm:** Hub-and-Spoke (1 Source → N Consumers).
+* **Data Flow:** Unidirectional. Updates flow *only* from Source to Consumer.
+* **Tech Stack:**
+  * **Backend:** Node.js (Express or NestJS).
+  * **Database:** Supabase (PostgreSQL) + Supabase Auth + Supabase Storage.
+  * **Frontend:** React, Tailwind CSS, Shadcn UI.
+  * **Styling Engine:** CSS Variables (Custom Properties) for token management.
+
+## 2. Database Schema (Supabase)
+
+Relational schema enforcing strict boundaries between Workspaces, Sites, and Libraries.
+
+### 2.1 Core Tables
+
+**workspaces**
+* id (UUID, PK)
+* name (Text)
+* plan (Enum: 'starter', 'core', 'agency', 'enterprise') — Controls library limits.
+
+**users**
+* id (UUID, PK) — Linked to Supabase Auth.
+* email (Text)
+* workspace_id (UUID, FK)
+* role (Enum: 'owner', 'admin', 'designer', 'marketer', 'content_editor')
+
+**sites**
+* id (UUID, PK)
+* workspace_id (UUID, FK)
+* name (Text)
+* type (Enum: 'source', 'consumer') — Determines if it can publish libraries.
+
+**libraries**
+* id (UUID, PK)
+* source_site_id (UUID, FK) — The "Hub".
+* name (Text)
+* version (Integer) — Increments on publish.
+* description (Text)
+
+**library_installations**
+* id (UUID, PK)
+* library_id (UUID, FK)
+* consumer_site_id (UUID, FK) — The "Spoke".
+* installed_version (Integer) — Used to detect pending updates.
+
+### 2.2 Design System Assets
+
+**variables (Design Tokens)**
+* id (UUID, PK)
+* library_id (UUID, FK)
+* key (Text) — e.g., `brand-primary`
+* value_default (Text) — e.g., `#0000FF`
+* value_dark (Text, Nullable) — For Mode support.
+* type (Enum: 'color', 'size', 'font')
+
+**components**
+* id (UUID, PK)
+* library_id (UUID, FK)
+* name (Text)
+* html_structure (Text/JSON) — The raw HTML or React Node tree.
+* css_styles (Text/JSON) — Tailwind classes or raw CSS.
+* props_schema (JSON) — Defines editable areas (Text, Image, Visibility).
+
+```json
+{
+  "headline": { "type": "text", "default": "Hello World" },
+  "hero_image": { "type": "image", "source": "asset_id" },
+  "show_button": { "type": "boolean", "default": true }
+}
+```
+
+**assets**
+* id (UUID, PK)
+* library_id (UUID, FK)
+* storage_path (Text) — Supabase Storage bucket path.
+* folder (Text) — Used for "Asset Settings" filtering.
+
+## 3. Backend Implementation (Node.js)
+
+### 3.1 Role-Based Access Control (RBAC) Middleware
+
+Enforces the permission matrix from the PRD (Section 6.1).
+
+```javascript
+const ROLES = {
+  ARCHITECT: ['owner', 'admin', 'designer'],
+  CONSUMER: ['marketer'],
+  VIEWER: ['content_editor']
+};
+
+async function checkPermission(req, res, next) {
+  const { userId, action } = req.body;
+  const user = await db.users.findById(userId);
+
+  if (action === 'CREATE_LIBRARY' && !ROLES.ARCHITECT.includes(user.role)) {
+    return res.status(403).json({ error: "Only Architects can create libraries." });
+  }
+  if (action === 'INSTALL_LIBRARY' && !ROLES.ARCHITECT.includes(user.role)) {
+    return res.status(403).json({ error: "Marketers cannot install libraries." });
+  }
+  next();
+}
+```
+
+### 3.2 The "Sync" Engine (Unidirectional Flow)
+
+1. **Publish (Source):** Architect clicks "Share Updates". Backend increments `libraries.version`. Backend snapshots current components and variables.
+2. **Notify (Consumer):** Endpoint `GET /api/sites/:siteId/updates` compares `library_installations.installed_version` vs `libraries.version`. Returns list of changed components.
+3. **Accept Updates (Consumer):** User clicks "Update All". Backend updates the local instance data on the Consumer site. During sync, CSS classes must be prefixed to prevent collisions (e.g., `.btn` becomes `.lib-123_btn`).
+
+## 4. Frontend Implementation (Shadcn UI + Tailwind)
+
+### 4.1 Library Manager (The "Hub" View)
+
+* **UI Component:** Card grid displaying active libraries.
+* **Action:** Shadcn Dialog for creating a new library.
+* **Assets Panel:** ScrollArea displaying images from Supabase Storage. Use Checkbox to select which folders are included in the share, implementing the "Asset Settings" requirement.
+
+### 4.2 Component Editor (The Architect Interface)
+
+* **Structure:** A split-pane view (ResizablePanel).
+  * **Left:** HTML structure tree.
+  * **Middle:** Live Canvas (Visual Preview).
+  * **Right:** Shadcn Form to define **Props**.
+* **Prop Implementation:** Use a dynamic form builder. If Architect adds a "Text Prop", generate a JSON schema entry. Use a Switch to toggle "Allow Override".
+
+### 4.3 The Consumer Interface (The Marketer Interface)
+
+* **Installation:** A Combobox (Search) to find libraries. Only show if user has ARCHITECT role.
+* **Usage:**
+  * **Drag & Drop:** Sidebar list of components.
+  * **ReadOnly Lock:** When a shared component is selected, the "Style" tab is disabled or replaced with a Shadcn Alert: *"Managed by Shared Library. Unlink to edit structure."*
+  * **Props Panel:** Only expose the fields defined in `props_schema`.
+    * Text Prop → Input field.
+    * Image Prop → File Picker.
+    * Visibility Prop → Switch.
+
+## 5. Specific Feature Implementation Details
+
+### 5.1 Variable Management (Design Tokens)
+
+* **Requirement:** Atomic updates (change color once, update everywhere).
+* **Tech Solution:** CSS Custom Properties (Variables).
+  * **Storage:** Store token `Brand-Primary = #0055FF`.
+  * **Rendering:** Inject a global `<style>` block into the Consumer Site:
+
+```css
+:root {
+  --brand-primary: #0055FF;
+}
+[data-theme='dark'] {
+  --brand-primary: #88CCFF;
+}
+```
+
+  * **Tailwind Integration:** Configure the Tailwind config to reference these vars: `colors: { brand: 'var(--brand-primary)' }`.
+
+### 5.2 Component "Slots"
+
+* Mark a div as `data-slot="modal-body"` in the Source definition.
+* In the Consumer editor, this div renders as a "Drop Zone" (dashed border).
+* Any component dropped here is nested as a child in the React tree, ensuring the parent structure remains locked.
+
+### 5.3 Detachment (Unlinking)
+
+* **Action:** Right-click context menu → "Unlink Instance".
+* **Logic:**
+  1. Fetch the raw HTML/CSS from the library definition.
+  2. Clone it into the `local_components` table of the Consumer Site.
+  3. Remove the `library_id` reference from the component instance.
+  4. The component is now independent and editable but receives no future updates.
+
+## 6. End-to-End User Flows
+
+### Flow A: Initialization (Architect)
+
+1. User logs in as Admin.
+2. Navigates to "Design Systems" tab.
+3. Clicks Button "New Library".
+4. Enters Name: "Core UI Kit".
+5. Defines Variables: Adds Primary Color via Color Picker.
+6. Builds Component: Creates a "Navbar". Adds a "Link Text" prop using the Properties Panel.
+7. Publishes: Clicks Button "Share with Workspace". Backend sets `sites.type = 'source'`, creates `libraries` entry.
+
+### Flow B: Consumption (Marketer)
+
+1. User logs in as Marketer to "Q3 Campaign Site".
+2. Attempt: Tries to install library → Access Denied (Middleware check).
+3. Action: Ask Admin to install "Core UI Kit".
+4. Usage: Drags "Navbar" onto canvas.
+5. Edit: Clicks "Link Text". Side panel shows Input. Changes "Home" to "Landing".
+6. Constraint: Tries to delete the logo inside Navbar → Delete key blocked. Toast notification: *"Shared components are read-only."*
+
+### Flow C: The Update Cycle
+
+1. Source: Architect changes Primary Color to Red. Clicks "Publish Updates".
+2. Consumer: Marketer sees a Badge (Red Dot) on the Library Icon.
+3. Review: Opens "Update Manager" (Dialog). Shows diff: "Variable: Primary Color → Changed".
+4. Action: Clicks "Accept".
+5. Result: Site re-renders. All buttons turn Red instantly via CSS variable update.
+
+## 7. Limitations & Constraints (To Build)
+
+1. **No CMS Binding in Shared Components:** The backend rejects any component containing a "Collection List" wrapper during the Publish phase. Validation logic: `if (component.hasNode('cms-list')) throw Error`.
+2. **No Circular Dependencies:** Before installing Library B into Site A, check if Library B depends on a library sourced from Site A (graph cycle detection).
+3. **Namespace Collisions:** Strictly enforce class hashing. `.container` in the library becomes `.lib_xyz_container` in the consumer to avoid breaking the consumer's local styles.

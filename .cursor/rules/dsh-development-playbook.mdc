@@ -1,0 +1,456 @@
+---
+description: Design System Hub (DSH) development playbook - build order, file structure, coding patterns, Supabase recipes, route map, and implementation checklists for efficient feature development
+alwaysApply: true
+---
+
+# DSH Development Playbook
+
+Operational guide for building the Design System Hub. Use alongside the PRD (webflow-shared-libraries-prd.mdc) for **what** and the implementation doc (design-system-hub-implementation.mdc) for **how**. This file tells you **in what order**, **where to put code**, and **which patterns to follow**.
+
+## 1. Tech Stack Quick Reference
+
+| Layer | Technology | Version | Notes |
+|-------|-----------|---------|-------|
+| Framework | Next.js (App Router) | 16 | `test-app/` is the working directory |
+| React | React | 19 | Server Components by default; add `"use client"` only when needed |
+| UI | shadcn/ui | Latest (57 components installed) | All primitives live in `src/components/ui/` — never modify these directly |
+| Styling | Tailwind CSS | v4 | Uses `@tailwindcss/postcss`; CSS variables for design tokens |
+| Database | Supabase (PostgreSQL) | — | Auth + Storage + Realtime |
+| State | React Context + URL state | — | No external state library; use `nuqs` or `useSearchParams` for URL state |
+| Forms | react-hook-form + zod | v7 / v4 | Already installed; use for all form validation |
+| Icons | lucide-react | Latest | Already installed |
+| Toasts | sonner | Latest | Already wired in layout via `<Toaster />` |
+
+## 2. Phased Build Order
+
+Build in this exact order. Each phase produces a working, testable increment.
+
+### Phase 1: Foundation (Data Layer + Auth)
+1. Set up Supabase client (`src/lib/supabase/client.ts`, `src/lib/supabase/server.ts`)
+2. Create database schema (migration SQL for: `workspaces`, `users`, `sites`, `libraries`, `library_installations`, `variables`, `components`, `assets`)
+3. Implement Supabase Auth (sign-up, login, session middleware)
+4. Seed data: one workspace, one admin user, one designer, one marketer
+5. Build auth pages: `/login`, `/signup`
+
+### Phase 2: Workspace & Site Management
+1. Dashboard layout with sidebar navigation (`/dashboard`)
+2. Workspace settings page (`/dashboard/settings`)
+3. Sites list page — CRUD for sites (`/dashboard/sites`)
+4. Site type toggle (source vs consumer) with validation guards
+
+### Phase 3: Library CRUD (The "Hub")
+1. Library list view — card grid (`/dashboard/libraries`)
+2. Create Library dialog (name, description, source site picker)
+3. Library detail page (`/dashboard/libraries/[id]`)
+4. RBAC enforcement: only Architects can create/manage libraries
+
+### Phase 4: Variables (Design Tokens)
+1. Variable editor UI (color picker, font picker, size input)
+2. Variable CRUD API routes
+3. Variable Modes (default + dark)
+4. CSS variable generation engine (`:root` block builder)
+5. Live preview of token changes
+
+### Phase 5: Component Builder (Architect Interface)
+1. Component list within a library
+2. Component creator — name, HTML structure (JSON tree), CSS styles
+3. Props schema builder (dynamic form: text, image, boolean)
+4. Slots definition (`data-slot` markers)
+5. Component preview canvas (live render)
+6. Variants system (style variants as enumerable props)
+
+### Phase 6: Library Publishing & Sync Engine
+1. "Share with Workspace" action — version increment + snapshot
+2. CSS namespace hashing (`.btn` → `.lib-{id}_btn`)
+3. Update detection endpoint (compare installed vs current version)
+4. Update review UI (diff view for changed components/variables)
+5. "Accept Updates" action — apply changes on consumer site
+6. Changelog entries per publish
+
+### Phase 7: Consumer Interface
+1. Library installation flow (search + install for Architect roles)
+2. Component browser sidebar (drag list from installed libraries)
+3. Read-only component rendering with Props panel
+4. Props editing: Text → Input, Image → File picker, Visibility → Switch
+5. Slot drop zones (dashed border containers)
+6. "Unlink Instance" action — clone to local, sever library link
+
+### Phase 8: Asset Management
+1. Supabase Storage bucket setup (per-library buckets)
+2. Asset upload UI with folder organization
+3. "Asset Settings" — folder inclusion checkboxes during share
+4. Consumer read-only asset browser
+5. "Duplicate to Local" action
+
+### Phase 9: Governance & Enterprise Features
+1. Role-based UI gating (hide/disable actions per role)
+2. Enterprise auto-install logic
+3. Circular dependency detection (graph cycle check before install)
+4. Plan-based library limits enforcement
+
+## 3. File & Folder Structure
+
+```
+test-app/src/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/page.tsx
+│   │   └── signup/page.tsx
+│   ├── (dashboard)/
+│   │   ├── layout.tsx                  ← Sidebar + top nav shell
+│   │   ├── dashboard/
+│   │   │   └── page.tsx                ← Overview / home
+│   │   ├── sites/
+│   │   │   ├── page.tsx                ← Sites list
+│   │   │   └── [siteId]/page.tsx       ← Site detail
+│   │   ├── libraries/
+│   │   │   ├── page.tsx                ← Library grid
+│   │   │   └── [libraryId]/
+│   │   │       ├── page.tsx            ← Library detail (variables, components, assets tabs)
+│   │   │       ├── variables/page.tsx  ← Token editor
+│   │   │       ├── components/
+│   │   │       │   ├── page.tsx        ← Component list
+│   │   │       │   └── [componentId]/page.tsx ← Component builder
+│   │   │       └── assets/page.tsx     ← Asset manager
+│   │   ├── consumer/
+│   │   │   └── [siteId]/page.tsx       ← Consumer canvas + component browser
+│   │   └── settings/page.tsx           ← Workspace settings
+│   ├── api/
+│   │   ├── auth/callback/route.ts      ← Supabase Auth callback
+│   │   ├── libraries/
+│   │   │   ├── route.ts                ← GET (list), POST (create)
+│   │   │   ├── [id]/route.ts           ← GET, PATCH, DELETE
+│   │   │   ├── [id]/publish/route.ts   ← POST (version bump + snapshot)
+│   │   │   └── [id]/install/route.ts   ← POST (install on consumer site)
+│   │   ├── variables/route.ts
+│   │   ├── components/route.ts
+│   │   └── assets/route.ts
+│   ├── layout.tsx
+│   ├── page.tsx                        ← Landing / redirect to dashboard
+│   └── globals.css
+├── components/
+│   ├── ui/                             ← shadcn primitives (DO NOT MODIFY)
+│   ├── layout/
+│   │   ├── app-sidebar.tsx
+│   │   ├── top-nav.tsx
+│   │   └── breadcrumbs.tsx
+│   ├── libraries/
+│   │   ├── library-card.tsx
+│   │   ├── create-library-dialog.tsx
+│   │   ├── update-review-dialog.tsx
+│   │   └── library-status-badge.tsx
+│   ├── variables/
+│   │   ├── variable-editor.tsx
+│   │   ├── color-token-row.tsx
+│   │   ├── font-token-row.tsx
+│   │   └── css-preview.tsx
+│   ├── component-builder/
+│   │   ├── props-schema-builder.tsx
+│   │   ├── slot-marker.tsx
+│   │   ├── component-preview.tsx
+│   │   └── variant-manager.tsx
+│   ├── consumer/
+│   │   ├── component-browser.tsx
+│   │   ├── props-panel.tsx
+│   │   ├── read-only-overlay.tsx
+│   │   └── slot-drop-zone.tsx
+│   └── shared/
+│       ├── empty-state.tsx
+│       ├── confirm-dialog.tsx
+│       └── role-gate.tsx               ← Conditionally renders children by role
+├── hooks/
+│   ├── use-mobile.ts                   ← Already exists
+│   ├── use-current-user.ts
+│   ├── use-workspace.ts
+│   ├── use-library.ts
+│   └── use-rbac.ts                     ← Returns permissions for current user
+├── lib/
+│   ├── utils.ts                        ← Already exists (cn helper)
+│   ├── supabase/
+│   │   ├── client.ts                   ← Browser client (createBrowserClient)
+│   │   ├── server.ts                   ← Server client (createServerClient with cookies)
+│   │   ├── middleware.ts               ← Auth session refresh middleware
+│   │   └── admin.ts                    ← Service-role client for admin operations
+│   ├── constants/
+│   │   ├── roles.ts                    ← RBAC role definitions + permission matrix
+│   │   └── plans.ts                    ← Plan limits (library caps per plan)
+│   ├── validators/
+│   │   ├── library.ts                  ← Zod schemas for library CRUD
+│   │   ├── variable.ts
+│   │   └── component.ts
+│   └── services/
+│       ├── sync-engine.ts              ← Version comparison + CSS namespacing logic
+│       ├── css-generator.ts            ← Builds :root CSS block from variables
+│       └── dependency-graph.ts         ← Circular dependency detection
+└── types/
+    ├── database.ts                     ← Supabase generated types (npx supabase gen types)
+    ├── library.ts                      ← Library, Variable, Component domain types
+    └── rbac.ts                         ← Role, Permission, Action types
+```
+
+## 4. Coding Patterns
+
+### 4.1 Server vs Client Components
+
+**Default to Server Components.** Only add `"use client"` when the component needs:
+- `useState`, `useEffect`, or other hooks
+- Event handlers (`onClick`, `onChange`)
+- Browser-only APIs
+
+**Pattern:** Fetch data in Server Components, pass to Client Components as props.
+
+```tsx
+// app/(dashboard)/libraries/page.tsx — Server Component (no directive)
+import { createServerClient } from "@/lib/supabase/server";
+import { LibraryGrid } from "@/components/libraries/library-grid";
+
+export default async function LibrariesPage() {
+  const supabase = await createServerClient();
+  const { data: libraries } = await supabase
+    .from("libraries")
+    .select("*, source_site:sites(name)");
+
+  return <LibraryGrid libraries={libraries ?? []} />;
+}
+```
+
+### 4.2 Supabase Client Pattern
+
+```tsx
+// lib/supabase/client.ts — Browser client (use in "use client" components)
+import { createBrowserClient } from "@supabase/ssr";
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+```
+
+```tsx
+// lib/supabase/server.ts — Server client (use in Server Components + Route Handlers)
+import { createServerClient as createSSRClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+export async function createServerClient() {
+  const cookieStore = await cookies();
+  return createSSRClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+}
+```
+
+### 4.3 API Route Pattern
+
+```tsx
+// app/api/libraries/route.ts
+import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
+import { createLibrarySchema } from "@/lib/validators/library";
+import { checkPermission } from "@/lib/constants/roles";
+
+export async function POST(request: Request) {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const permission = await checkPermission(supabase, user.id, "CREATE_LIBRARY");
+  if (!permission.allowed) return NextResponse.json({ error: permission.reason }, { status: 403 });
+
+  const body = await request.json();
+  const parsed = createLibrarySchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+  const { data, error } = await supabase.from("libraries").insert(parsed.data).select().single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json(data, { status: 201 });
+}
+```
+
+### 4.4 RBAC Gate Pattern (UI)
+
+```tsx
+// components/shared/role-gate.tsx
+"use client";
+
+import { useCurrentUser } from "@/hooks/use-current-user";
+import type { Action } from "@/types/rbac";
+
+interface RoleGateProps {
+  action: Action;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+export function RoleGate({ action, children, fallback = null }: RoleGateProps) {
+  const { user, can } = useCurrentUser();
+  if (!user || !can(action)) return <>{fallback}</>;
+  return <>{children}</>;
+}
+```
+
+Usage: `<RoleGate action="CREATE_LIBRARY"><Button>New Library</Button></RoleGate>`
+
+### 4.5 Form Pattern
+
+Always use `react-hook-form` + `zod` for forms. Always use shadcn `Form` components.
+
+```tsx
+const formSchema = z.object({
+  name: z.string().min(2).max(50),
+  description: z.string().optional(),
+});
+
+// Inside component:
+const form = useForm<z.infer<typeof formSchema>>({
+  resolver: zodResolver(formSchema),
+  defaultValues: { name: "", description: "" },
+});
+```
+
+### 4.6 Toast Pattern
+
+Use `sonner` (already wired). Keep messages short and actionable.
+
+```tsx
+import { toast } from "sonner";
+
+toast.success("Library published", { description: "Version 3 is now live." });
+toast.error("Permission denied", { description: "Only Architects can publish." });
+```
+
+### 4.7 Loading & Empty States
+
+Use `Skeleton` for loading, custom `EmptyState` component for empty lists.
+
+```tsx
+// Loading: use Suspense + skeleton at the page level
+<Suspense fallback={<LibraryGridSkeleton />}>
+  <LibraryGrid />
+</Suspense>
+```
+
+## 5. RBAC Permission Matrix (Code Reference)
+
+Hardcode in `lib/constants/roles.ts`. This is the single source of truth for all permission checks.
+
+```typescript
+export const PERMISSION_MATRIX: Record<Action, Role[]> = {
+  CREATE_LIBRARY:     ["owner", "admin", "designer"],
+  INSTALL_LIBRARY:    ["owner", "admin", "site_manager", "designer"],
+  ACCEPT_UPDATES:     ["owner", "admin", "site_manager", "designer"],
+  USE_SHARED_ELEMENTS:["owner", "admin", "site_manager", "designer", "marketer"],
+  UNLINK_DETACH:      ["owner", "admin", "site_manager", "designer"],
+  MANAGE_SOURCE_ASSETS:["owner", "admin", "designer"],
+  MANAGE_WORKSPACE:   ["owner", "admin"],
+};
+```
+
+## 6. CSS Variable / Token Generation
+
+The sync engine must generate a CSS block from the `variables` table. This is the core mechanism for brand propagation.
+
+```typescript
+// lib/services/css-generator.ts
+export function generateTokenCSS(variables: Variable[]): string {
+  const defaultVars = variables
+    .map(v => `  --${v.key}: ${v.value_default};`)
+    .join("\n");
+  const darkVars = variables
+    .filter(v => v.value_dark)
+    .map(v => `  --${v.key}: ${v.value_dark};`)
+    .join("\n");
+
+  return `:root {\n${defaultVars}\n}\n\n[data-theme="dark"] {\n${darkVars}\n}`;
+}
+```
+
+## 7. CSS Namespace Hashing
+
+Prevents class collisions between library components and consumer local styles.
+
+```typescript
+// lib/services/sync-engine.ts
+export function namespaceClasses(css: string, libraryId: string): string {
+  const prefix = `lib-${libraryId.slice(0, 8)}`;
+  return css.replace(/\.([a-zA-Z][\w-]*)/g, `.${prefix}_$1`);
+}
+```
+
+## 8. Database Migration Order
+
+Run migrations in this exact sequence (each depends on the previous):
+
+1. `001_workspaces.sql` — workspaces table + plan enum
+2. `002_users.sql` — users table + role enum + FK to workspaces
+3. `003_sites.sql` — sites table + type enum + FK to workspaces
+4. `004_libraries.sql` — libraries table + FK to sites (source_site_id)
+5. `005_library_installations.sql` — junction table + FK to libraries + sites
+6. `006_variables.sql` — design tokens + FK to libraries
+7. `007_components.sql` — components + props_schema JSON + FK to libraries
+8. `008_assets.sql` — assets + storage_path + FK to libraries
+9. `009_rls_policies.sql` — Row Level Security policies for all tables
+10. `010_seed.sql` — Demo workspace, users, sample library
+
+## 9. Environment Variables
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+Create `.env.local` from `.env.example`. Never commit secrets.
+
+## 10. Development Checklist Per Feature
+
+Before marking any feature as done, verify:
+
+- [ ] Server Component where possible, `"use client"` only when required
+- [ ] RBAC check on both API route AND UI (defense in depth)
+- [ ] Zod validation on all API inputs
+- [ ] Loading state (Skeleton or Spinner)
+- [ ] Empty state when no data
+- [ ] Error handling with toast feedback
+- [ ] Mobile-responsive layout (test at 375px width)
+- [ ] No hardcoded strings — use constants or env vars
+- [ ] shadcn/ui components only — no custom HTML elements for UI primitives
+- [ ] No inline styles — use Tailwind classes only
+
+## 11. Key Domain Rules to Enforce in Code
+
+These are product constraints that must be enforced programmatically:
+
+1. **Unidirectional flow:** Consumer sites NEVER write back to the library. All mutations go through the Source Site.
+2. **Site type exclusivity:** A site set as `type: 'source'` cannot also be a consumer of another library that sources from itself (no circular deps).
+3. **Plan-gated limits:** Before creating a library, check `workspaces.plan` against the limit (starter=0, core/growth/freelancer=1, agency/enterprise=unlimited).
+4. **Marketer guardrails:** Marketers can use components but cannot install libraries, unlink instances, or modify structure. Enforce at API + UI.
+5. **CMS exclusion:** The component creation API rejects any component with `cms-list` nodes.
+6. **Version pinning:** `library_installations.installed_version` is only updated when the consumer explicitly accepts updates — never auto-updated.
+
+## 12. Naming Conventions
+
+| Entity | Convention | Example |
+|--------|-----------|---------|
+| Route files | kebab-case | `create-library-dialog.tsx` |
+| Components | PascalCase | `LibraryCard`, `PropsPanel` |
+| Hooks | camelCase, `use` prefix | `useCurrentUser`, `useRbac` |
+| API routes | REST-style paths | `/api/libraries/[id]/publish` |
+| Database columns | snake_case | `source_site_id`, `installed_version` |
+| CSS variables (tokens) | kebab-case with semantic prefix | `--brand-primary`, `--text-muted` |
+| Zod schemas | camelCase with `Schema` suffix | `createLibrarySchema` |
+| Types | PascalCase | `Library`, `Variable`, `PropsSchema` |
+| Constants | UPPER_SNAKE_CASE | `PERMISSION_MATRIX`, `PLAN_LIMITS` |
