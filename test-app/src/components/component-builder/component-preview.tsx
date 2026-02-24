@@ -2,14 +2,10 @@
 
 import {
   ArrowRight,
-  Check,
-  ChevronRight,
   Zap,
   Shield,
   Users,
-  Star,
   Globe,
-  Mail,
   Twitter,
   Github,
   Linkedin,
@@ -18,12 +14,16 @@ import type { DesignComponent } from "@/types/database";
 import { getVariablesByLibrary } from "@/lib/mock-data";
 
 type PropOverrides = Record<string, string | boolean>;
+type ElementBindings = Record<string, { content: string | null; visibility: string | null }>;
 
 interface ComponentPreviewProps {
   component: DesignComponent;
   scale?: "sm" | "md";
   propOverrides?: PropOverrides;
   seamless?: boolean;
+  selectedElementId?: string | null;
+  onElementSelect?: (elementId: string) => void;
+  elementBindings?: ElementBindings;
 }
 
 function useTokens(libraryId: string) {
@@ -48,6 +48,9 @@ export function ComponentPreview({
   scale = "md",
   propOverrides,
   seamless = false,
+  selectedElementId,
+  onElementSelect,
+  elementBindings,
 }: ComponentPreviewProps) {
   const tokens = useTokens(component.library_id);
   const props = resolveProps(component, propOverrides);
@@ -73,106 +76,125 @@ export function ComponentPreview({
         } as React.CSSProperties
       }
     >
-      {renderPreview(component, scale, props, seamless)}
+      {renderPreview(component, scale, props, seamless, selectedElementId, onElementSelect, elementBindings)}
     </div>
   );
 }
 
-function renderPreview(component: DesignComponent, scale: "sm" | "md", props: PropOverrides, seamless: boolean) {
-  switch (component.id) {
-    case "comp-001":
-      return <PrimaryButtonPreview scale={scale} props={props} seamless={seamless} />;
-    case "comp-002":
-      return <NavigationBarPreview scale={scale} props={props} />;
-    case "comp-003":
-      return <CardPreview scale={scale} props={props} seamless={seamless} />;
-    case "comp-004":
-      return <HeroSectionPreview scale={scale} props={props} />;
-    case "comp-005":
-      return <PricingTablePreview scale={scale} props={props} seamless={seamless} />;
-    case "comp-006":
-      return <TestimonialBlockPreview scale={scale} props={props} seamless={seamless} />;
-    case "comp-007":
-      return <SecondaryButtonPreview scale={scale} props={props} seamless={seamless} />;
-    case "comp-008":
-      return <FeatureRowPreview scale={scale} props={props} />;
-    case "comp-009":
-      return <StatsSectionPreview scale={scale} props={props} />;
-    case "comp-010":
-      return <CTABannerPreview scale={scale} props={props} />;
-    case "comp-011":
-      return <FooterPreview scale={scale} props={props} />;
-    case "comp-012":
-      return <FeaturesGridPreview scale={scale} props={props} />;
-    default:
-      return <GenericPreview name={component.name} />;
-  }
+function SelectableElement({
+  elementId,
+  selectedId,
+  onSelect,
+  label,
+  children,
+}: {
+  elementId: string;
+  selectedId: string | null | undefined;
+  onSelect: ((id: string) => void) | undefined;
+  label: string;
+  children: React.ReactNode;
+}) {
+  if (!onSelect) return <>{children}</>;
+
+  const isSelected = elementId === selectedId;
+
+  return (
+    <div
+      className={`relative transition-all ${
+        isSelected
+          ? "rounded-sm outline outline-2 outline-offset-2 outline-blue-500"
+          : "cursor-pointer rounded-sm hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-400/50"
+      }`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(elementId);
+      }}
+    >
+      {isSelected && (
+        <span className="absolute -top-5 left-1 z-10 flex items-center gap-1 whitespace-nowrap rounded bg-blue-500 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm">
+          {label}
+        </span>
+      )}
+      {children}
+    </div>
+  );
 }
 
 interface PreviewProps {
   scale: "sm" | "md";
   props: PropOverrides;
-  seamless?: boolean;
+  sid: string | null | undefined;
+  sel: ((id: string) => void) | undefined;
+  bindings?: ElementBindings;
 }
 
-function PrimaryButtonPreview({ scale, props, seamless }: PreviewProps) {
-  const label = String(props.label || "Click me");
-  const showIcon = props.show_icon as boolean;
-  const size = scale === "sm" ? "py-2 px-5 text-xs" : "py-2.5 px-6 text-sm";
-  return (
-    <div className={seamless ? "flex justify-center py-8" : ""}>
-      <button
-        className={`inline-flex items-center gap-2 font-semibold text-white transition-opacity hover:opacity-90 ${size}`}
-        style={{
-          backgroundColor: "var(--preview-primary)",
-          borderRadius: "var(--preview-radius)",
-        }}
-      >
-        {label}
-        {showIcon && <ArrowRight className="size-3.5" />}
-      </button>
-    </div>
-  );
+function resolveContent(
+  elementId: string,
+  fallback: string,
+  bindings: ElementBindings | undefined,
+  props: PropOverrides,
+): string {
+  const key = bindings?.[elementId]?.content;
+  if (key && props[key] !== undefined) return String(props[key]);
+  return fallback;
 }
 
-function SecondaryButtonPreview({ scale, props, seamless }: PreviewProps) {
-  const label = String(props.label || "Learn more");
-  const showIcon = props.show_icon as boolean;
-  const variant = String(props.variant || "filled");
-  const size = scale === "sm" ? "py-2 px-5 text-xs" : "py-2.5 px-6 text-sm";
-  const isFilled = variant === "filled";
-
-  return (
-    <div className={seamless ? "flex justify-center py-8" : ""}>
-      <button
-        className={`inline-flex items-center gap-2 font-semibold transition-opacity hover:opacity-90 ${size}`}
-        style={
-          isFilled
-            ? {
-                backgroundColor: "var(--preview-secondary)",
-                color: "#fff",
-                borderRadius: "var(--preview-radius)",
-              }
-            : {
-                color: "var(--preview-primary)",
-                border: "1.5px solid var(--preview-primary)",
-                borderRadius: "var(--preview-radius)",
-                backgroundColor: "transparent",
-              }
-        }
-      >
-        {label}
-        {showIcon && <ArrowRight className="size-3.5" />}
-      </button>
-    </div>
-  );
+function resolveVisible(
+  elementId: string,
+  fallback: boolean,
+  bindings: ElementBindings | undefined,
+  props: PropOverrides,
+): boolean {
+  const key = bindings?.[elementId]?.visibility;
+  if (key && props[key] !== undefined) return Boolean(props[key]);
+  return fallback;
 }
 
-function NavigationBarPreview({ scale, props }: PreviewProps) {
-  const logoText = String(props.logo_text || "Acme");
-  const showCta = props.show_cta as boolean;
+function renderPreview(
+  component: DesignComponent,
+  scale: "sm" | "md",
+  props: PropOverrides,
+  seamless: boolean,
+  sid?: string | null,
+  sel?: (id: string) => void,
+  bindings?: ElementBindings,
+) {
+  const p: PreviewProps = { scale, props, sid, sel, bindings };
+  switch (component.id) {
+    case "comp-002":
+      return <NavigationBarPreview {...p} />;
+    case "comp-004":
+      return <HeroSectionPreview {...p} />;
+    case "comp-008":
+      return <FeatureRowPreview {...p} />;
+    case "comp-009":
+      return <StatsSectionPreview {...p} />;
+    case "comp-010":
+      return <CTABannerPreview {...p} />;
+    case "comp-011":
+      return <FooterPreview {...p} />;
+    case "comp-012":
+      return <FeaturesGridPreview {...p} />;
+    default:
+      return <GenericPreview name={component.name} />;
+  }
+}
+
+function NavigationBarPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
+  const rv = (id: string, fb: boolean) => resolveVisible(id, fb, bindings, props);
+  const logoText = rc("el-nav-logo", String(props.logo_text || "Acme"));
+  const showCta = rv("el-nav-cta", props.show_cta as boolean);
   const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
   const initial = logoText.charAt(0).toUpperCase();
+
+  const navItems = [
+    { name: "Products", id: "el-nav-products" },
+    { name: "Solutions", id: "el-nav-solutions" },
+    { name: "Pricing", id: "el-nav-pricing" },
+    { name: "Resources", id: "el-nav-resources" },
+  ];
+
   return (
     <div className="w-full">
       <div
@@ -186,26 +208,32 @@ function NavigationBarPreview({ scale, props }: PreviewProps) {
           >
             {initial}
           </div>
-          <span className={`font-semibold ${textSize}`} style={{ color: "var(--preview-text)" }}>
-            {logoText}
-          </span>
+          <SelectableElement elementId="el-nav-logo" selectedId={sid} onSelect={sel} label="Logo Text">
+            <span className={`font-semibold ${textSize}`} style={{ color: "var(--preview-text)" }}>
+              {logoText}
+            </span>
+          </SelectableElement>
         </div>
         <div className="flex items-center gap-5">
-          {["Products", "Solutions", "Pricing", "Resources"].map((item) => (
-            <span key={item} className={textSize} style={{ color: "var(--preview-muted)" }}>
-              {item}
-            </span>
+          {navItems.map(({ name, id }) => (
+            <SelectableElement key={id} elementId={id} selectedId={sid} onSelect={sel} label={`Nav: ${name}`}>
+              <span className={textSize} style={{ color: "var(--preview-muted)" }}>
+                {rc(id, name)}
+              </span>
+            </SelectableElement>
           ))}
           {showCta && (
-            <button
-              className={`rounded-md px-3 py-1.5 font-medium text-white ${textSize}`}
-              style={{
-                backgroundColor: "var(--preview-primary)",
-                borderRadius: "var(--preview-radius)",
-              }}
-            >
-              Get Started
-            </button>
+            <SelectableElement elementId="el-nav-cta" selectedId={sid} onSelect={sel} label="CTA Button">
+              <button
+                className={`rounded-md px-3 py-1.5 font-medium text-white ${textSize}`}
+                style={{
+                  backgroundColor: "var(--preview-primary)",
+                  borderRadius: "var(--preview-radius)",
+                }}
+              >
+                {rc("el-nav-cta", "Get Started")}
+              </button>
+            </SelectableElement>
           )}
         </div>
       </div>
@@ -213,55 +241,72 @@ function NavigationBarPreview({ scale, props }: PreviewProps) {
   );
 }
 
-function HeroSectionPreview({ scale, props }: PreviewProps) {
-  const title = String(props.title || "Welcome to Acme");
-  const subtitle = String(props.subtitle || "Build something amazing.");
-  const showCta = props.show_cta as boolean;
-  const ctaText = String(props.cta_text || "Get Started");
+function HeroSectionPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
+  const rv = (id: string, fb: boolean) => resolveVisible(id, fb, bindings, props);
+  const title = rc("el-hero-title", String(props.title || "Welcome to Acme"));
+  const subtitle = rc("el-hero-subtitle", String(props.subtitle || "Build something amazing."));
+  const showCta = rv("el-hero-cta", props.show_cta as boolean);
+  const ctaText = rc("el-hero-cta", String(props.cta_text || "Get Started"));
   const headingSize = scale === "sm" ? "text-xl" : "text-3xl";
   const textSize = scale === "sm" ? "text-[10px]" : "text-sm";
+
   return (
     <div className="w-full py-16 text-center">
       <div className="mx-auto max-w-lg space-y-5 px-6">
-        <span
-          className={`inline-block rounded-full px-3 py-1 font-medium ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
-          style={{
-            backgroundColor: "color-mix(in srgb, var(--preview-primary) 10%, transparent)",
-            color: "var(--preview-primary)",
-          }}
-        >
-          New Release
-        </span>
-        <h2
-          className={`font-bold leading-tight tracking-tight ${headingSize}`}
-          style={{ color: "var(--preview-text)" }}
-        >
-          {title}
-        </h2>
-        <p className={`mx-auto max-w-md leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
-          {subtitle}
-        </p>
+        <SelectableElement elementId="el-hero-badge" selectedId={sid} onSelect={sel} label="Badge">
+          <span
+            className={`inline-block rounded-full px-3 py-1 font-medium ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--preview-primary) 10%, transparent)",
+              color: "var(--preview-primary)",
+            }}
+          >
+            {rc("el-hero-badge", "New Release")}
+          </span>
+        </SelectableElement>
+
+        <SelectableElement elementId="el-hero-title" selectedId={sid} onSelect={sel} label="Heading Large">
+          <h2
+            className={`font-bold leading-tight tracking-tight ${headingSize}`}
+            style={{ color: "var(--preview-text)" }}
+          >
+            {title}
+          </h2>
+        </SelectableElement>
+
+        <SelectableElement elementId="el-hero-subtitle" selectedId={sid} onSelect={sel} label="Paragraph">
+          <p className={`mx-auto max-w-md leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
+            {subtitle}
+          </p>
+        </SelectableElement>
+
         {showCta && (
           <div className="flex items-center justify-center gap-3 pt-2">
-            <button
-              className={`px-5 py-2.5 font-semibold text-white ${scale === "sm" ? "text-xs" : "text-sm"}`}
-              style={{
-                backgroundColor: "var(--preview-primary)",
-                borderRadius: "var(--preview-radius)",
-              }}
-            >
-              {ctaText}
-            </button>
-            <button
-              className={`px-5 py-2.5 font-semibold ${scale === "sm" ? "text-xs" : "text-sm"}`}
-              style={{
-                color: "var(--preview-text)",
-                border: "1px solid var(--preview-border)",
-                borderRadius: "var(--preview-radius)",
-              }}
-            >
-              Learn More
-            </button>
+            <SelectableElement elementId="el-hero-cta" selectedId={sid} onSelect={sel} label="Primary Button">
+              <button
+                className={`px-5 py-2.5 font-semibold text-white ${scale === "sm" ? "text-xs" : "text-sm"}`}
+                style={{
+                  backgroundColor: "var(--preview-primary)",
+                  borderRadius: "var(--preview-radius)",
+                }}
+              >
+                {ctaText}
+              </button>
+            </SelectableElement>
+
+            <SelectableElement elementId="el-hero-secondary" selectedId={sid} onSelect={sel} label="Secondary Button">
+              <button
+                className={`px-5 py-2.5 font-semibold ${scale === "sm" ? "text-xs" : "text-sm"}`}
+                style={{
+                  color: "var(--preview-text)",
+                  border: "1px solid var(--preview-border)",
+                  borderRadius: "var(--preview-radius)",
+                }}
+              >
+                {rc("el-hero-secondary", "Learn More")}
+              </button>
+            </SelectableElement>
           </div>
         )}
       </div>
@@ -269,60 +314,75 @@ function HeroSectionPreview({ scale, props }: PreviewProps) {
   );
 }
 
-function FeatureRowPreview({ scale, props }: PreviewProps) {
-  const stepNumber = String(props.step_number || "1");
-  const title = String(props.title || "Feature title");
-  const description = String(props.description || "Feature description goes here.");
+function FeatureRowPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
+  const rv = (id: string, fb: boolean) => resolveVisible(id, fb, bindings, props);
+  const stepNumber = rc("el-feat-step", String(props.step_number || "1"));
+  const title = rc("el-feat-title", String(props.title || "Feature title"));
+  const description = rc("el-feat-desc", String(props.description || "Feature description goes here."));
   const imageRight = props.image_right as boolean;
-  const showStep = props.show_step as boolean;
+  const showStep = rv("el-feat-step", props.show_step as boolean);
   const textSize = scale === "sm" ? "text-[10px]" : "text-sm";
   const headingSize = scale === "sm" ? "text-sm" : "text-xl";
 
   const textContent = (
     <div className="space-y-3 px-6">
       {showStep && (
-        <span
-          className={`inline-block rounded-full px-2.5 py-0.5 font-semibold ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
-          style={{
-            backgroundColor: "color-mix(in srgb, var(--preview-primary) 10%, transparent)",
-            color: "var(--preview-primary)",
-          }}
-        >
-          Step {stepNumber}
-        </span>
+        <SelectableElement elementId="el-feat-step" selectedId={sid} onSelect={sel} label="Step Badge">
+          <span
+            className={`inline-block rounded-full px-2.5 py-0.5 font-semibold ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--preview-primary) 10%, transparent)",
+              color: "var(--preview-primary)",
+            }}
+          >
+            Step {stepNumber}
+          </span>
+        </SelectableElement>
       )}
-      <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
-        {title}
-      </h3>
-      <p className={`leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
-        {description}
-      </p>
-      <div className="flex items-center gap-1.5 pt-1">
-        <span
-          className={`font-semibold ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
-          style={{ color: "var(--preview-primary)" }}
-        >
-          Learn more
-        </span>
-        <ArrowRight className="size-3" style={{ color: "var(--preview-primary)" }} />
-      </div>
+
+      <SelectableElement elementId="el-feat-title" selectedId={sid} onSelect={sel} label="Feature Title">
+        <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
+          {title}
+        </h3>
+      </SelectableElement>
+
+      <SelectableElement elementId="el-feat-desc" selectedId={sid} onSelect={sel} label="Description">
+        <p className={`leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
+          {description}
+        </p>
+      </SelectableElement>
+
+      <SelectableElement elementId="el-feat-link" selectedId={sid} onSelect={sel} label="Learn More Link">
+        <div className="flex items-center gap-1.5 pt-1">
+          <span
+            className={`font-semibold ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
+            style={{ color: "var(--preview-primary)" }}
+          >
+            {rc("el-feat-link", "Learn more")}
+          </span>
+          <ArrowRight className="size-3" style={{ color: "var(--preview-primary)" }} />
+        </div>
+      </SelectableElement>
     </div>
   );
 
   const visualContent = (
-    <div
-      className="mx-6 aspect-[4/3] rounded-lg"
-      style={{
-        background: `linear-gradient(135deg, color-mix(in srgb, var(--preview-primary) 15%, transparent), color-mix(in srgb, var(--preview-secondary) 15%, transparent))`,
-        border: "1px solid var(--preview-border)",
-      }}
-    >
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-4 opacity-40">
-        <div className="h-2 w-3/4 rounded" style={{ backgroundColor: "var(--preview-primary)" }} />
-        <div className="h-2 w-1/2 rounded" style={{ backgroundColor: "var(--preview-muted)" }} />
-        <div className="mt-2 h-8 w-8 rounded-full" style={{ backgroundColor: "var(--preview-primary)" }} />
+    <SelectableElement elementId="el-feat-image" selectedId={sid} onSelect={sel} label="Feature Image">
+      <div
+        className="mx-6 aspect-[4/3] rounded-lg"
+        style={{
+          background: `linear-gradient(135deg, color-mix(in srgb, var(--preview-primary) 15%, transparent), color-mix(in srgb, var(--preview-secondary) 15%, transparent))`,
+          border: "1px solid var(--preview-border)",
+        }}
+      >
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-4 opacity-40">
+          <div className="h-2 w-3/4 rounded" style={{ backgroundColor: "var(--preview-primary)" }} />
+          <div className="h-2 w-1/2 rounded" style={{ backgroundColor: "var(--preview-muted)" }} />
+          <div className="mt-2 h-8 w-8 rounded-full" style={{ backgroundColor: "var(--preview-primary)" }} />
+        </div>
       </div>
-    </div>
+    </SelectableElement>
   );
 
   return (
@@ -344,32 +404,39 @@ function FeatureRowPreview({ scale, props }: PreviewProps) {
   );
 }
 
-function FeaturesGridPreview({ scale, props }: PreviewProps) {
-  const sectionTitle = String(props.title || "Why choose us");
-  const sectionSubtitle = String(props.subtitle || "Everything you need to scale.");
+function FeaturesGridPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
+  const sectionTitle = rc("el-grid-title", String(props.title || "Why choose us"));
+  const sectionSubtitle = rc("el-grid-subtitle", String(props.subtitle || "Everything you need to scale."));
   const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
   const headingSize = scale === "sm" ? "text-sm" : "text-xl";
 
   const cards = [
-    { title: String(props.card_1_title), desc: String(props.card_1_desc), icon: Zap },
-    { title: String(props.card_2_title), desc: String(props.card_2_desc), icon: Shield },
-    { title: String(props.card_3_title), desc: String(props.card_3_desc), icon: Users },
+    { title: rc("el-grid-c1-title", String(props.card_1_title)), desc: rc("el-grid-c1-desc", String(props.card_1_desc)), icon: Zap, titleId: "el-grid-c1-title", descId: "el-grid-c1-desc" },
+    { title: rc("el-grid-c2-title", String(props.card_2_title)), desc: rc("el-grid-c2-desc", String(props.card_2_desc)), icon: Shield, titleId: "el-grid-c2-title", descId: "el-grid-c2-desc" },
+    { title: rc("el-grid-c3-title", String(props.card_3_title)), desc: rc("el-grid-c3-desc", String(props.card_3_desc)), icon: Users, titleId: "el-grid-c3-title", descId: "el-grid-c3-desc" },
   ];
 
   return (
     <div className="w-full py-12">
       <div className="mx-auto max-w-lg space-y-2 px-6 pb-8 text-center">
-        <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
-          {sectionTitle}
-        </h3>
-        <p className={textSize} style={{ color: "var(--preview-muted)" }}>
-          {sectionSubtitle}
-        </p>
+        <SelectableElement elementId="el-grid-title" selectedId={sid} onSelect={sel} label="Section Title">
+          <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
+            {sectionTitle}
+          </h3>
+        </SelectableElement>
+
+        <SelectableElement elementId="el-grid-subtitle" selectedId={sid} onSelect={sel} label="Section Subtitle">
+          <p className={textSize} style={{ color: "var(--preview-muted)" }}>
+            {sectionSubtitle}
+          </p>
+        </SelectableElement>
       </div>
+
       <div className="grid grid-cols-3 gap-4 px-6">
         {cards.map((card) => (
           <div
-            key={card.title}
+            key={card.titleId}
             className="space-y-3 rounded-lg p-5"
             style={{
               border: "1px solid var(--preview-border)",
@@ -384,15 +451,21 @@ function FeaturesGridPreview({ scale, props }: PreviewProps) {
             >
               <card.icon className="size-4" style={{ color: "var(--preview-primary)" }} />
             </div>
-            <h4
-              className={`font-semibold ${scale === "sm" ? "text-[10px]" : "text-sm"}`}
-              style={{ color: "var(--preview-text)" }}
-            >
-              {card.title}
-            </h4>
-            <p className={`leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
-              {card.desc}
-            </p>
+
+            <SelectableElement elementId={card.titleId} selectedId={sid} onSelect={sel} label={card.title}>
+              <h4
+                className={`font-semibold ${scale === "sm" ? "text-[10px]" : "text-sm"}`}
+                style={{ color: "var(--preview-text)" }}
+              >
+                {card.title}
+              </h4>
+            </SelectableElement>
+
+            <SelectableElement elementId={card.descId} selectedId={sid} onSelect={sel} label="Description">
+              <p className={`leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
+                {card.desc}
+              </p>
+            </SelectableElement>
           </div>
         ))}
       </div>
@@ -400,12 +473,13 @@ function FeaturesGridPreview({ scale, props }: PreviewProps) {
   );
 }
 
-function StatsSectionPreview({ scale, props }: PreviewProps) {
+function StatsSectionPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
   const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
   const stats = [
-    { value: String(props.stat_1_value), label: String(props.stat_1_label) },
-    { value: String(props.stat_2_value), label: String(props.stat_2_label) },
-    { value: String(props.stat_3_value), label: String(props.stat_3_label) },
+    { value: rc("el-stat-1-val", String(props.stat_1_value)), label: rc("el-stat-1-lbl", String(props.stat_1_label)), valId: "el-stat-1-val", lblId: "el-stat-1-lbl" },
+    { value: rc("el-stat-2-val", String(props.stat_2_value)), label: rc("el-stat-2-lbl", String(props.stat_2_label)), valId: "el-stat-2-val", lblId: "el-stat-2-lbl" },
+    { value: rc("el-stat-3-val", String(props.stat_3_value)), label: rc("el-stat-3-lbl", String(props.stat_3_label)), valId: "el-stat-3-val", lblId: "el-stat-3-lbl" },
   ];
 
   return (
@@ -417,11 +491,16 @@ function StatsSectionPreview({ scale, props }: PreviewProps) {
     >
       <div className="grid grid-cols-3 gap-6 px-6 text-center">
         {stats.map((stat) => (
-          <div key={stat.label} className="space-y-1">
-            <p className={`font-bold text-white ${scale === "sm" ? "text-xl" : "text-3xl"}`}>
-              {stat.value}
-            </p>
-            <p className={`text-white/75 ${textSize}`}>{stat.label}</p>
+          <div key={stat.valId} className="space-y-1">
+            <SelectableElement elementId={stat.valId} selectedId={sid} onSelect={sel} label={`${stat.value}`}>
+              <p className={`font-bold text-white ${scale === "sm" ? "text-xl" : "text-3xl"}`}>
+                {stat.value}
+              </p>
+            </SelectableElement>
+
+            <SelectableElement elementId={stat.lblId} selectedId={sid} onSelect={sel} label="Stat Label">
+              <p className={`text-white/75 ${textSize}`}>{stat.label}</p>
+            </SelectableElement>
           </div>
         ))}
       </div>
@@ -429,11 +508,13 @@ function StatsSectionPreview({ scale, props }: PreviewProps) {
   );
 }
 
-function CTABannerPreview({ scale, props }: PreviewProps) {
-  const title = String(props.title || "Ready to get started?");
-  const subtitle = String(props.subtitle || "Join thousands of teams using our platform.");
-  const ctaText = String(props.cta_text || "Start Free Trial");
-  const showSecondary = props.show_secondary_cta as boolean;
+function CTABannerPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
+  const rv = (id: string, fb: boolean) => resolveVisible(id, fb, bindings, props);
+  const title = rc("el-cta-title", String(props.title || "Ready to get started?"));
+  const subtitle = rc("el-cta-subtitle", String(props.subtitle || "Join thousands of teams using our platform."));
+  const ctaText = rc("el-cta-btn", String(props.cta_text || "Start Free Trial"));
+  const showSecondary = rv("el-cta-secondary", props.show_secondary_cta as boolean);
   const headingSize = scale === "sm" ? "text-lg" : "text-2xl";
   const textSize = scale === "sm" ? "text-[10px]" : "text-sm";
 
@@ -443,33 +524,44 @@ function CTABannerPreview({ scale, props }: PreviewProps) {
       style={{ backgroundColor: "color-mix(in srgb, var(--preview-primary) 6%, white)" }}
     >
       <div className="mx-auto max-w-md space-y-4 px-6">
-        <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
-          {title}
-        </h3>
-        <p className={textSize} style={{ color: "var(--preview-muted)" }}>
-          {subtitle}
-        </p>
+        <SelectableElement elementId="el-cta-title" selectedId={sid} onSelect={sel} label="Headline">
+          <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
+            {title}
+          </h3>
+        </SelectableElement>
+
+        <SelectableElement elementId="el-cta-subtitle" selectedId={sid} onSelect={sel} label="Subtitle">
+          <p className={textSize} style={{ color: "var(--preview-muted)" }}>
+            {subtitle}
+          </p>
+        </SelectableElement>
+
         <div className="flex items-center justify-center gap-3 pt-2">
-          <button
-            className={`px-5 py-2.5 font-semibold text-white ${scale === "sm" ? "text-xs" : "text-sm"}`}
-            style={{
-              backgroundColor: "var(--preview-primary)",
-              borderRadius: "var(--preview-radius)",
-            }}
-          >
-            {ctaText}
-          </button>
-          {showSecondary && (
+          <SelectableElement elementId="el-cta-btn" selectedId={sid} onSelect={sel} label="Primary Button">
             <button
-              className={`px-5 py-2.5 font-semibold ${scale === "sm" ? "text-xs" : "text-sm"}`}
+              className={`px-5 py-2.5 font-semibold text-white ${scale === "sm" ? "text-xs" : "text-sm"}`}
               style={{
-                color: "var(--preview-text)",
-                border: "1px solid var(--preview-border)",
+                backgroundColor: "var(--preview-primary)",
                 borderRadius: "var(--preview-radius)",
               }}
             >
-              Contact Sales
+              {ctaText}
             </button>
+          </SelectableElement>
+
+          {showSecondary && (
+            <SelectableElement elementId="el-cta-secondary" selectedId={sid} onSelect={sel} label="Secondary Button">
+              <button
+                className={`px-5 py-2.5 font-semibold ${scale === "sm" ? "text-xs" : "text-sm"}`}
+                style={{
+                  color: "var(--preview-text)",
+                  border: "1px solid var(--preview-border)",
+                  borderRadius: "var(--preview-radius)",
+                }}
+              >
+                {rc("el-cta-secondary", "Contact Sales")}
+              </button>
+            </SelectableElement>
           )}
         </div>
       </div>
@@ -477,10 +569,12 @@ function CTABannerPreview({ scale, props }: PreviewProps) {
   );
 }
 
-function FooterPreview({ scale, props }: PreviewProps) {
-  const companyName = String(props.company_name || "Acme");
-  const tagline = String(props.tagline || "Build something amazing.");
-  const showSocial = props.show_social as boolean;
+function FooterPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
+  const rv = (id: string, fb: boolean) => resolveVisible(id, fb, bindings, props);
+  const companyName = rc("el-footer-name", String(props.company_name || "Acme"));
+  const tagline = rc("el-footer-tagline", String(props.tagline || "Build something amazing."));
+  const showSocial = rv("el-footer-social", props.show_social as boolean);
   const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
   const initial = companyName.charAt(0).toUpperCase();
 
@@ -503,15 +597,23 @@ function FooterPreview({ scale, props }: PreviewProps) {
               >
                 {initial}
               </div>
-              <span className={`font-semibold text-white ${textSize}`}>{companyName}</span>
+              <SelectableElement elementId="el-footer-name" selectedId={sid} onSelect={sel} label="Company Name">
+                <span className={`font-semibold text-white ${textSize}`}>{companyName}</span>
+              </SelectableElement>
             </div>
-            <p className={`leading-relaxed text-white/50 ${textSize}`}>{tagline}</p>
+
+            <SelectableElement elementId="el-footer-tagline" selectedId={sid} onSelect={sel} label="Tagline">
+              <p className={`leading-relaxed text-white/50 ${textSize}`}>{tagline}</p>
+            </SelectableElement>
+
             {showSocial && (
-              <div className="flex gap-3 pt-1">
-                {[Twitter, Github, Linkedin, Globe].map((Icon, i) => (
-                  <Icon key={i} className="size-3.5 text-white/40" />
-                ))}
-              </div>
+              <SelectableElement elementId="el-footer-social" selectedId={sid} onSelect={sel} label="Social Links">
+                <div className="flex gap-3 pt-1">
+                  {[Twitter, Github, Linkedin, Globe].map((Icon, i) => (
+                    <Icon key={i} className="size-3.5 text-white/40" />
+                  ))}
+                </div>
+              </SelectableElement>
             )}
           </div>
           {columns.map((col) => (
@@ -540,185 +642,6 @@ function FooterPreview({ scale, props }: PreviewProps) {
                 {item}
               </span>
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CardPreview({ scale, props, seamless }: PreviewProps) {
-  const title = String(props.title || "Card Title");
-  const subtitle = String(props.subtitle || "Card subtitle");
-  const showImage = props.show_image as boolean;
-  const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
-  return (
-    <div className={seamless ? "flex justify-center px-6 py-6" : ""}>
-      <div
-        className={`overflow-hidden ${seamless ? "w-full max-w-sm" : "w-full max-w-[280px]"}`}
-        style={{
-          border: "1px solid var(--preview-border)",
-          borderRadius: "var(--preview-radius)",
-          backgroundColor: "var(--preview-bg)",
-        }}
-      >
-        {showImage && (
-          <div
-            className="h-32"
-            style={{
-              background: `linear-gradient(135deg, var(--preview-primary), var(--preview-secondary))`,
-              opacity: 0.85,
-            }}
-          />
-        )}
-        <div className="space-y-2 p-4">
-          <p
-            className={`font-semibold ${scale === "sm" ? "text-xs" : "text-sm"}`}
-            style={{ color: "var(--preview-text)" }}
-          >
-            {title}
-          </p>
-          <p className={`leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
-            {subtitle}
-          </p>
-          <div className="flex items-center gap-1 pt-1">
-            <ChevronRight className="size-3" style={{ color: "var(--preview-primary)" }} />
-            <span className={`font-medium ${textSize}`} style={{ color: "var(--preview-primary)" }}>
-              Learn more
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PricingTablePreview({ scale, props, seamless }: PreviewProps) {
-  const planName = String(props.plan_name || "Pro Plan");
-  const price = String(props.price || "$29/mo");
-  const showBadge = props.show_badge as boolean;
-  const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
-  const features = ["10 projects", "5GB storage", "Priority support", "API access"];
-
-  const priceParts = price.match(/^([^/]+)(\/.*)?$/);
-  const priceAmount = priceParts?.[1] || price;
-  const pricePeriod = priceParts?.[2] || "";
-
-  return (
-    <div className={seamless ? "flex justify-center px-6 py-6" : ""}>
-      <div
-        className={`space-y-4 p-5 ${seamless ? "w-full max-w-xs" : "w-full max-w-[240px]"}`}
-        style={{
-          border: showBadge ? "2px solid var(--preview-primary)" : "1px solid var(--preview-border)",
-          borderRadius: "var(--preview-radius)",
-          backgroundColor: "var(--preview-bg)",
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <span
-            className={`font-bold ${scale === "sm" ? "text-xs" : "text-sm"}`}
-            style={{ color: "var(--preview-text)" }}
-          >
-            {planName}
-          </span>
-          {showBadge && (
-            <span
-              className={`rounded-full px-2 py-0.5 font-medium text-white ${textSize}`}
-              style={{ backgroundColor: "var(--preview-primary)", fontSize: "9px" }}
-            >
-              Popular
-            </span>
-          )}
-        </div>
-        <div>
-          <span className="text-3xl font-bold" style={{ color: "var(--preview-text)" }}>
-            {priceAmount}
-          </span>
-          {pricePeriod && (
-            <span className={textSize} style={{ color: "var(--preview-muted)" }}>
-              {pricePeriod}
-            </span>
-          )}
-        </div>
-        <div className="space-y-2">
-          {features.map((feature) => (
-            <div key={feature} className="flex items-center gap-2">
-              <Check className="size-3.5" style={{ color: "var(--preview-success)" }} />
-              <span className={textSize} style={{ color: "var(--preview-text)" }}>
-                {feature}
-              </span>
-            </div>
-          ))}
-        </div>
-        <button
-          className={`w-full rounded-md py-2 font-semibold text-white ${textSize}`}
-          style={{
-            backgroundColor: "var(--preview-primary)",
-            borderRadius: "var(--preview-radius)",
-          }}
-        >
-          Subscribe
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TestimonialBlockPreview({ scale, props, seamless }: PreviewProps) {
-  const quote = String(props.quote || "This product changed everything for us.");
-  const author = String(props.author || "Jane Doe, CEO");
-  const showAvatar = props.show_avatar as boolean;
-  const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
-
-  const authorParts = author.split(",").map((s) => s.trim());
-  const authorName = authorParts[0] || author;
-  const authorRole = authorParts.slice(1).join(", ");
-  const authorInitial = authorName.charAt(0).toUpperCase();
-
-  return (
-    <div className={seamless ? "flex justify-center px-6 py-10" : ""}>
-      <div className={`space-y-3 ${seamless ? "w-full max-w-md" : "w-full max-w-[300px]"}`}>
-        <div
-          className="space-y-3 p-4"
-          style={{
-            borderLeft: "3px solid var(--preview-primary)",
-            backgroundColor: "color-mix(in srgb, var(--preview-primary) 4%, transparent)",
-            borderRadius: "0 var(--preview-radius) var(--preview-radius) 0",
-          }}
-        >
-          <div className="flex gap-0.5">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Star
-                key={i}
-                className="size-3.5"
-                fill="var(--preview-primary)"
-                style={{ color: "var(--preview-primary)" }}
-              />
-            ))}
-          </div>
-          <p
-            className={`italic leading-relaxed ${textSize}`}
-            style={{ color: "var(--preview-text)" }}
-          >
-            &ldquo;{quote}&rdquo;
-          </p>
-        </div>
-        <div className="flex items-center gap-3 px-1">
-          {showAvatar && (
-            <div
-              className="flex size-8 items-center justify-center rounded-full text-xs font-bold text-white"
-              style={{ backgroundColor: "var(--preview-secondary)" }}
-            >
-              {authorInitial}
-            </div>
-          )}
-          <div>
-            <p className={`font-semibold ${textSize}`} style={{ color: "var(--preview-text)" }}>
-              {authorName}
-            </p>
-            {authorRole && (
-              <p style={{ color: "var(--preview-muted)", fontSize: "10px" }}>{authorRole}</p>
-            )}
           </div>
         </div>
       </div>

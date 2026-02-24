@@ -136,33 +136,6 @@ export const MOCK_VARIABLES: Variable[] = [
 
 export const MOCK_COMPONENTS: DesignComponent[] = [
   {
-    id: "comp-001",
-    library_id: "lib-001",
-    name: "Primary Button",
-    html_structure: '<button class="btn btn-primary"><slot name="label">Click me</slot></button>',
-    css_styles: ".btn { padding: 12px 24px; border-radius: var(--radius-md); font-weight: 600; } .btn-primary { background: var(--brand-primary); color: #fff; }",
-    props_schema: {
-      label: { type: "text", default: "Click me", label: "Button Label" },
-      show_icon: { type: "boolean", default: false, label: "Show Icon" },
-    },
-    created_at: "2025-11-05T10:00:00Z",
-    updated_at: "2026-02-10T14:00:00Z",
-  },
-  {
-    id: "comp-007",
-    library_id: "lib-001",
-    name: "Secondary Button",
-    html_structure: '<button class="btn btn-secondary"><slot name="label">Learn more</slot></button>',
-    css_styles: ".btn { padding: 12px 24px; border-radius: var(--radius-md); font-weight: 600; } .btn-secondary { background: var(--brand-secondary); color: #fff; } .btn-secondary.outline { background: transparent; border: 1.5px solid var(--brand-primary); color: var(--brand-primary); }",
-    props_schema: {
-      label: { type: "text", default: "Learn more", label: "Button Label" },
-      show_icon: { type: "boolean", default: false, label: "Show Icon" },
-      variant: { type: "text", default: "filled", label: "Variant (filled / outline)" },
-    },
-    created_at: "2025-11-05T10:00:00Z",
-    updated_at: "2026-02-10T14:00:00Z",
-  },
-  {
     id: "comp-002",
     library_id: "lib-001",
     name: "Navigation Bar",
@@ -174,20 +147,6 @@ export const MOCK_COMPONENTS: DesignComponent[] = [
     },
     created_at: "2025-11-06T10:00:00Z",
     updated_at: "2026-01-20T16:00:00Z",
-  },
-  {
-    id: "comp-003",
-    library_id: "lib-001",
-    name: "Card",
-    html_structure: '<div class="card"><div class="card-header" data-slot="header"></div><div class="card-body" data-slot="body"></div></div>',
-    css_styles: ".card { border: 1px solid var(--surface-border); border-radius: var(--radius-lg); background: var(--surface-bg); }",
-    props_schema: {
-      title: { type: "text", default: "Card Title", label: "Title" },
-      subtitle: { type: "text", default: "Card subtitle", label: "Subtitle" },
-      show_image: { type: "boolean", default: true, label: "Show Image" },
-    },
-    created_at: "2025-11-08T10:00:00Z",
-    updated_at: "2026-02-05T11:00:00Z",
   },
   {
     id: "comp-004",
@@ -203,34 +162,6 @@ export const MOCK_COMPONENTS: DesignComponent[] = [
     },
     created_at: "2025-12-10T09:00:00Z",
     updated_at: "2026-02-01T10:00:00Z",
-  },
-  {
-    id: "comp-005",
-    library_id: "lib-001",
-    name: "Pricing Table",
-    html_structure: '<div class="pricing"><div class="pricing-header"><slot name="plan">Pro</slot></div><div class="pricing-body" data-slot="features"></div></div>',
-    css_styles: ".pricing { border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }",
-    props_schema: {
-      plan_name: { type: "text", default: "Pro Plan", label: "Plan Name" },
-      price: { type: "text", default: "$29/mo", label: "Price" },
-      show_badge: { type: "boolean", default: false, label: "Show Popular Badge" },
-    },
-    created_at: "2025-12-15T14:00:00Z",
-    updated_at: "2026-01-28T09:00:00Z",
-  },
-  {
-    id: "comp-006",
-    library_id: "lib-001",
-    name: "Testimonial Block",
-    html_structure: '<blockquote class="testimonial"><p class="quote"><slot name="quote">Great product!</slot></p><cite class="author"><slot name="author">Jane Doe</slot></cite></blockquote>',
-    css_styles: ".testimonial { padding: var(--spacing-lg); border-left: 4px solid var(--brand-primary); }",
-    props_schema: {
-      quote: { type: "text", default: "This product changed everything for us.", label: "Quote" },
-      author: { type: "text", default: "Jane Doe, CEO", label: "Author" },
-      show_avatar: { type: "boolean", default: true, label: "Show Avatar" },
-    },
-    created_at: "2025-12-18T10:00:00Z",
-    updated_at: "2026-01-15T13:00:00Z",
   },
   {
     id: "comp-008",
@@ -366,6 +297,7 @@ export interface SectionInstance {
   instanceId: string;
   componentId: string;
   propOverrides: Record<string, string | boolean>;
+  isLinked: boolean;
 }
 
 export type SitePageLayout = SectionInstance[];
@@ -376,6 +308,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
       instanceId: "sec-mkt-01",
       componentId: "comp-002",
       propOverrides: { logo_text: "Acme", show_cta: true },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-02",
@@ -386,6 +319,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         show_cta: true,
         cta_text: "Start Free Trial",
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-03",
@@ -397,6 +331,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         image_right: true,
         show_step: true,
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-04",
@@ -408,6 +343,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         image_right: false,
         show_step: true,
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-05",
@@ -419,6 +355,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         image_right: true,
         show_step: true,
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-06",
@@ -431,6 +368,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         stat_3_value: "99.9%",
         stat_3_label: "uptime guaranteed",
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-07",
@@ -445,15 +383,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         card_3_title: "Team Collaboration",
         card_3_desc: "Real-time editing, branching, and review workflows built for modern teams.",
       },
-    },
-    {
-      instanceId: "sec-mkt-08",
-      componentId: "comp-006",
-      propOverrides: {
-        quote: "Acme cut our deployment time from hours to minutes. Our engineering team couldn't be happier with the results.",
-        author: "Sarah Chen, CTO at Velocity",
-        show_avatar: true,
-      },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-09",
@@ -464,11 +394,13 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         cta_text: "Start Free Trial",
         show_secondary_cta: true,
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-mkt-10",
       componentId: "comp-011",
       propOverrides: { company_name: "Acme", tagline: "The all-in-one platform for modern teams.", show_social: true },
+      isLinked: true,
     },
   ],
 
@@ -477,6 +409,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
       instanceId: "sec-sup-01",
       componentId: "comp-002",
       propOverrides: { logo_text: "Acme Support", show_cta: false },
+      isLinked: true,
     },
     {
       instanceId: "sec-sup-02",
@@ -487,6 +420,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         show_cta: true,
         cta_text: "Search Docs",
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-sup-03",
@@ -501,6 +435,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         card_3_title: "API Reference",
         card_3_desc: "Complete REST API docs, SDKs, webhooks, and integration guides for developers.",
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-sup-04",
@@ -512,6 +447,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         image_right: true,
         show_step: false,
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-sup-05",
@@ -524,6 +460,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         stat_3_value: "24/7",
         stat_3_label: "support availability",
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-sup-06",
@@ -534,11 +471,13 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         cta_text: "Open a Ticket",
         show_secondary_cta: true,
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-sup-07",
       componentId: "comp-011",
       propOverrides: { company_name: "Acme", tagline: "Support that scales with you.", show_social: false },
+      isLinked: true,
     },
   ],
 
@@ -547,6 +486,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
       instanceId: "sec-blog-01",
       componentId: "comp-002",
       propOverrides: { logo_text: "Acme Blog", show_cta: true },
+      isLinked: true,
     },
     {
       instanceId: "sec-blog-02",
@@ -557,6 +497,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         show_cta: false,
         cta_text: "Subscribe",
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-blog-03",
@@ -571,6 +512,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         card_3_title: "The Future of CSS Tokens",
         card_3_desc: "Why design tokens are replacing hardcoded values — and how to migrate your existing codebase.",
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-blog-04",
@@ -582,15 +524,7 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         image_right: false,
         show_step: false,
       },
-    },
-    {
-      instanceId: "sec-blog-05",
-      componentId: "comp-006",
-      propOverrides: {
-        quote: "The Acme blog is my go-to resource for staying current on design systems and frontend architecture. Highly recommended.",
-        author: "Marcus Williams, VP Design at Outline",
-        show_avatar: true,
-      },
+      isLinked: true,
     },
     {
       instanceId: "sec-blog-06",
@@ -601,15 +535,85 @@ export const MOCK_SITE_LAYOUTS: Record<string, SitePageLayout> = {
         cta_text: "Subscribe Now",
         show_secondary_cta: false,
       },
+      isLinked: true,
     },
     {
       instanceId: "sec-blog-07",
       componentId: "comp-011",
       propOverrides: { company_name: "Acme", tagline: "Engineering and design insights.", show_social: true },
+      isLinked: true,
     },
   ],
 };
 
 export function getSiteLayout(siteId: string): SitePageLayout {
   return MOCK_SITE_LAYOUTS[siteId] || [];
+}
+
+export type ElementType = "heading" | "text" | "button" | "image" | "container" | "link" | "badge";
+
+export interface ComponentElement {
+  id: string;
+  label: string;
+  type: ElementType;
+  contentBinding: string | null;
+  visibilityBinding: string | null;
+}
+
+const COMPONENT_ELEMENTS: Record<string, ComponentElement[]> = {
+  "comp-002": [
+    { id: "el-nav-logo", label: "Logo Text", type: "heading", contentBinding: "logo_text", visibilityBinding: null },
+    { id: "el-nav-products", label: "Nav Link: Products", type: "link", contentBinding: null, visibilityBinding: null },
+    { id: "el-nav-solutions", label: "Nav Link: Solutions", type: "link", contentBinding: null, visibilityBinding: null },
+    { id: "el-nav-pricing", label: "Nav Link: Pricing", type: "link", contentBinding: null, visibilityBinding: null },
+    { id: "el-nav-resources", label: "Nav Link: Resources", type: "link", contentBinding: null, visibilityBinding: null },
+    { id: "el-nav-cta", label: "CTA Button", type: "button", contentBinding: null, visibilityBinding: "show_cta" },
+  ],
+  "comp-004": [
+    { id: "el-hero-badge", label: "Badge", type: "badge", contentBinding: null, visibilityBinding: null },
+    { id: "el-hero-title", label: "Heading Large", type: "heading", contentBinding: "title", visibilityBinding: null },
+    { id: "el-hero-subtitle", label: "Paragraph", type: "text", contentBinding: "subtitle", visibilityBinding: null },
+    { id: "el-hero-cta", label: "Primary Button", type: "button", contentBinding: "cta_text", visibilityBinding: "show_cta" },
+    { id: "el-hero-secondary", label: "Secondary Button", type: "button", contentBinding: null, visibilityBinding: "show_cta" },
+  ],
+  "comp-008": [
+    { id: "el-feat-step", label: "Step Badge", type: "badge", contentBinding: "step_number", visibilityBinding: "show_step" },
+    { id: "el-feat-title", label: "Feature Title", type: "heading", contentBinding: "title", visibilityBinding: null },
+    { id: "el-feat-desc", label: "Description", type: "text", contentBinding: "description", visibilityBinding: null },
+    { id: "el-feat-link", label: "Learn More Link", type: "link", contentBinding: null, visibilityBinding: null },
+    { id: "el-feat-image", label: "Feature Image", type: "image", contentBinding: null, visibilityBinding: null },
+  ],
+  "comp-009": [
+    { id: "el-stat-1-val", label: "Stat 1 Value", type: "heading", contentBinding: "stat_1_value", visibilityBinding: null },
+    { id: "el-stat-1-lbl", label: "Stat 1 Label", type: "text", contentBinding: "stat_1_label", visibilityBinding: null },
+    { id: "el-stat-2-val", label: "Stat 2 Value", type: "heading", contentBinding: "stat_2_value", visibilityBinding: null },
+    { id: "el-stat-2-lbl", label: "Stat 2 Label", type: "text", contentBinding: "stat_2_label", visibilityBinding: null },
+    { id: "el-stat-3-val", label: "Stat 3 Value", type: "heading", contentBinding: "stat_3_value", visibilityBinding: null },
+    { id: "el-stat-3-lbl", label: "Stat 3 Label", type: "text", contentBinding: "stat_3_label", visibilityBinding: null },
+  ],
+  "comp-010": [
+    { id: "el-cta-title", label: "Headline", type: "heading", contentBinding: "title", visibilityBinding: null },
+    { id: "el-cta-subtitle", label: "Subtitle", type: "text", contentBinding: "subtitle", visibilityBinding: null },
+    { id: "el-cta-btn", label: "Primary Button", type: "button", contentBinding: "cta_text", visibilityBinding: null },
+    { id: "el-cta-secondary", label: "Secondary Button", type: "button", contentBinding: null, visibilityBinding: "show_secondary_cta" },
+  ],
+  "comp-011": [
+    { id: "el-footer-name", label: "Company Name", type: "heading", contentBinding: "company_name", visibilityBinding: null },
+    { id: "el-footer-tagline", label: "Tagline", type: "text", contentBinding: "tagline", visibilityBinding: null },
+    { id: "el-footer-social", label: "Social Links", type: "container", contentBinding: null, visibilityBinding: "show_social" },
+  ],
+  "comp-012": [
+    { id: "el-grid-title", label: "Section Title", type: "heading", contentBinding: "title", visibilityBinding: null },
+    { id: "el-grid-subtitle", label: "Section Subtitle", type: "text", contentBinding: "subtitle", visibilityBinding: null },
+    { id: "el-grid-c1-title", label: "Card 1 Title", type: "heading", contentBinding: "card_1_title", visibilityBinding: null },
+    { id: "el-grid-c1-desc", label: "Card 1 Description", type: "text", contentBinding: "card_1_desc", visibilityBinding: null },
+    { id: "el-grid-c2-title", label: "Card 2 Title", type: "heading", contentBinding: "card_2_title", visibilityBinding: null },
+    { id: "el-grid-c2-desc", label: "Card 2 Description", type: "text", contentBinding: "card_2_desc", visibilityBinding: null },
+    { id: "el-grid-c3-title", label: "Card 3 Title", type: "heading", contentBinding: "card_3_title", visibilityBinding: null },
+    { id: "el-grid-c3-desc", label: "Card 3 Description", type: "text", contentBinding: "card_3_desc", visibilityBinding: null },
+  ],
+};
+
+export function getComponentElements(componentId: string): ComponentElement[] {
+  return COMPONENT_ELEMENTS[componentId] || [];
 }

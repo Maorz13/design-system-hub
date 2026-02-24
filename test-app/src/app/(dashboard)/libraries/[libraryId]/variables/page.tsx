@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,17 @@ export default function VariablesPage({
   const [showDark, setShowDark] = useState(false);
 
   if (!library) {
-    return <p className="text-muted-foreground">Library not found.</p>;
+    return (
+      <div className="space-y-4">
+        <p className="text-muted-foreground">Library not found.</p>
+        <Button variant="outline" asChild>
+          <Link href="/libraries">
+            <ArrowLeft className="mr-2 size-4" />
+            Back to Libraries
+          </Link>
+        </Button>
+      </div>
+    );
   }
 
   const colorVars = variables.filter((v) => v.type === "color");

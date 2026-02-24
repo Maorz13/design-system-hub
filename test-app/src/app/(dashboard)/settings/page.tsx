@@ -45,7 +45,7 @@ export default function SettingsPage() {
   const libraryCount = MOCK_LIBRARIES.length;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">

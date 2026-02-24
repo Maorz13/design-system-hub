@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Globe,
-  Library,
   Settings,
-  Palette,
   ChevronUp,
   LogOut,
+  Building2,
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { ROLE_LABELS } from "@/lib/constants/roles";
@@ -27,21 +25,67 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 
-const NAV_ITEMS = [
-  { title: "Sites", href: "/sites", icon: Globe },
-  { title: "Libraries", href: "/libraries", icon: Library },
+interface NavItem {
+  title: string;
+  href: string;
+}
+
+const MAIN_NAV: NavItem[] = [
+  { title: "Home", href: "/" },
+  { title: "Sites", href: "/sites" },
+  { title: "Libraries", href: "/libraries" },
+  { title: "Custom Templates", href: "#" },
+  { title: "Custom Apps", href: "#" },
+  { title: "Media", href: "#" },
+  { title: "CMS", href: "#" },
+  { title: "Approvals", href: "#" },
 ];
 
-export function AppSidebar() {
+const MANAGEMENT_NAV: NavItem[] = [
+  { title: "Domains", href: "#" },
+  { title: "Routing", href: "#" },
+  { title: "Analytics & Monitoring", href: "#" },
+  { title: "Security", href: "#" },
+  { title: "Customer Care Tickets", href: "#" },
+];
+
+const ADMIN_NAV: NavItem[] = [
+  { title: "Team", href: "#" },
+  { title: "Settings", href: "/settings" },
+];
+
+function NavGroup({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
+
+  return (
+    <SidebarMenu>
+      {items.map((item) => {
+        const isActive =
+          pathname === item.href ||
+          (item.href !== "/sites" && item.href !== "#" && pathname.startsWith(item.href));
+
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+              <Link href={item.href}>
+                <span>{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+    </SidebarMenu>
+  );
+}
+
+export function AppSidebar() {
   const { user } = useCurrentUser();
 
   const initials = user.name
@@ -51,56 +95,35 @@ export function AppSidebar() {
     .toUpperCase();
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/sites">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Palette className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Design System Hub</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    Acme Corp
-                  </span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+    <Sidebar collapsible="none" className="border-r" style={{ "--sidebar-width": "228px" } as React.CSSProperties}>
+      <SidebarHeader className="items-center px-4 py-[30px]">
+        <div className="flex size-14 items-center justify-center rounded-lg bg-muted">
+          <Building2 className="size-6 text-muted-foreground" />
+        </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="overflow-x-hidden">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_ITEMS.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/sites" && pathname.startsWith(item.href));
-
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.title}
-                    >
-                      <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+            <NavGroup items={MAIN_NAV} />
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarSeparator />
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <NavGroup items={MANAGEMENT_NAV} />
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <NavGroup items={ADMIN_NAV} />
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
@@ -151,8 +174,6 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   );
 }

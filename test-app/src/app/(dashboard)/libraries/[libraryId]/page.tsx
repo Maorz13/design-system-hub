@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Paintbrush,
   Component,
-  Image,
   Globe,
   ArrowLeft,
   Upload,
@@ -13,8 +12,6 @@ import {
   Pencil,
   Check,
   X,
-  FileCode,
-  FileImage,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -44,17 +41,10 @@ import {
   getLibraryById,
   getVariablesByLibrary,
   getComponentsByLibrary,
-  getAssetsByLibrary,
   getInstallationsByLibrary,
   MOCK_SITES,
 } from "@/lib/mock-data";
-import type { Variable, Asset } from "@/types/database";
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import type { Variable } from "@/types/database";
 
 export default function LibraryDetailPage({
   params,
@@ -81,7 +71,6 @@ export default function LibraryDetailPage({
 
   const [variables, setVariables] = useState(() => getVariablesByLibrary(library.id));
   const components = getComponentsByLibrary(library.id);
-  const assets = getAssetsByLibrary(library.id);
   const installations = getInstallationsByLibrary(library.id);
 
   const colorVars = variables.filter((v) => v.type === "color");
@@ -140,15 +129,11 @@ export default function LibraryDetailPage({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="variables">
             <Paintbrush className="mr-1 size-3" />
-            Variables ({variables.length})
+            Brand Kit ({variables.length})
           </TabsTrigger>
           <TabsTrigger value="components">
             <Component className="mr-1 size-3" />
-            Components ({components.length})
-          </TabsTrigger>
-          <TabsTrigger value="assets">
-            <Image className="mr-1 size-3" />
-            Assets ({assets.length})
+            Shared Components ({components.length})
           </TabsTrigger>
           <TabsTrigger value="consumers">
             <Globe className="mr-1 size-3" />
@@ -157,7 +142,7 @@ export default function LibraryDetailPage({
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Variables</CardTitle>
@@ -182,18 +167,6 @@ export default function LibraryDetailPage({
                 <div className="text-2xl font-bold">{components.length}</div>
                 <p className="text-xs text-muted-foreground">
                   Shared building blocks
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Assets</CardTitle>
-                <Image className="size-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{assets.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Logos, icons, and images
                 </p>
               </CardContent>
             </Card>
@@ -283,7 +256,7 @@ export default function LibraryDetailPage({
             {components.map((comp) => {
               const propCount = Object.keys(comp.props_schema).length;
               return (
-                <Card key={comp.id}>
+                <Card key={comp.id} className="flex flex-col">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">{comp.name}</CardTitle>
@@ -292,71 +265,34 @@ export default function LibraryDetailPage({
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <ComponentPreview component={comp} scale="sm" />
+                  <CardContent className="flex flex-1 flex-col">
+                    <div className="flex-1">
+                      <ComponentPreview component={comp} scale="sm" />
+                    </div>
                     <Separator className="my-3" />
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{propCount} props</span>
-                      <span>
-                        Updated{" "}
-                        {new Date(comp.updated_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>{propCount} props</span>
+                        <span>
+                          Updated{" "}
+                          {new Date(comp.updated_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <Button variant="secondary" size="sm" className="h-7 text-xs" asChild>
+                        <Link href={`/libraries/${library.id}/components/${comp.id}`}>
+                          Manage
+                        </Link>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
-        </TabsContent>
-
-        <TabsContent value="assets">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Library Assets</CardTitle>
-              <CardDescription>
-                Logos, icons, and images shared through this library.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">Preview</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Folder</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Size</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {assets.map((asset) => (
-                    <TableRow key={asset.id}>
-                      <TableCell>
-                        <AssetThumbnail asset={asset} />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {asset.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {asset.folder}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {asset.file_type}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatBytes(asset.file_size)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="consumers">
@@ -526,39 +462,3 @@ function EditableVariableRow({
   );
 }
 
-const THUMB_VISUALS: Record<string, { bg: string; icon: typeof FileImage }> = {
-  "acme-logo.svg": { bg: "bg-blue-50", icon: FileCode },
-  "acme-logo-dark.svg": { bg: "bg-gray-900", icon: FileCode },
-  "icon-arrow.svg": { bg: "bg-orange-50", icon: FileCode },
-  "icon-check.svg": { bg: "bg-green-50", icon: FileCode },
-  "hero-bg.jpg": { bg: "bg-gradient-to-br from-blue-500 to-purple-600", icon: FileImage },
-  "pattern-dots.png": { bg: "bg-gradient-to-br from-gray-200 to-gray-300", icon: FileImage },
-};
-
-function AssetThumbnail({ asset }: { asset: Asset }) {
-  const visual = THUMB_VISUALS[asset.name];
-  const isSvg = asset.file_type === "image/svg+xml";
-  const isImage = asset.file_type.startsWith("image/") && !isSvg;
-  const Icon = visual?.icon ?? (isSvg ? FileCode : isImage ? FileImage : FileImage);
-  const bg = visual?.bg ?? (isSvg ? "bg-muted" : "bg-muted");
-
-  if (isImage) {
-    return (
-      <div
-        className={`flex size-10 items-center justify-center overflow-hidden rounded-md border ${bg}`}
-      >
-        <Icon className="size-4 text-white/80" />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`flex size-10 items-center justify-center rounded-md border ${bg}`}
-    >
-      <Icon
-        className={`size-4 ${asset.name.includes("dark") ? "text-white/70" : "text-muted-foreground"}`}
-      />
-    </div>
-  );
-}
