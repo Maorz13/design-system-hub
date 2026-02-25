@@ -9,12 +9,10 @@ import {
   Image,
   ToggleLeft,
   Plus,
-  Trash2,
   Hash,
   Link2,
   FileText,
   Play,
-  X,
   AlignLeft,
   MousePointerClick,
   Tag,
@@ -37,10 +35,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -129,10 +125,10 @@ const CONTENT_COMPAT: Record<ElementType, PropType[]> = {
 const SIDEBAR_TOOLS = [Layers, LayoutGrid, Type, Palette, Image, Search, Zap, Code];
 const SIDEBAR_BOTTOM = [MessageSquare, CircleHelp];
 
-const RIGHT_TABS: { value: string; icon: typeof Pen }[] = [
-  { value: "style", icon: Pen },
-  { value: "settings", icon: Settings2 },
-  { value: "interactions", icon: Zap },
+const RIGHT_TABS: { value: string; label: string; icon: typeof Pen }[] = [
+  { value: "style", label: "Design", icon: Pen },
+  { value: "settings", label: "Settings", icon: Settings2 },
+  { value: "interactions", label: "Animation", icon: Zap },
 ];
 
 function mapLegacyType(t: string): PropType {
@@ -221,7 +217,6 @@ export default function ComponentEditorPage({
     );
   }
 
-  const selectedProp = selectedKey ? propsSchema[selectedKey] : null;
   const selectedElement = selectedElementId
     ? elements.find((el) => el.id === selectedElementId) || null
     : null;
@@ -460,46 +455,39 @@ export default function ComponentEditorPage({
               </PopoverContent>
             </Popover>
           </div>
-          <div className="shrink-0 border-b">
+          <ScrollArea className="min-h-0 flex-1 border-t">
             {schemaEntries.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 py-4 text-center">
                 <Type className="size-4 text-muted-foreground/30" />
                 <p className="text-[10px] text-muted-foreground">No properties yet.</p>
               </div>
             ) : (
-              <ScrollArea className="max-h-40">
-                {schemaEntries.map(([key, schema]) => {
-                  const Icon = TYPE_ICONS[schema.type] || Type;
-                  const isSelected = selectedKey === key;
-                  return (
+              schemaEntries.map(([key, schema]) => {
+                const Icon = TYPE_ICONS[schema.type] || Type;
+                const isSelected = selectedKey === key;
+                return (
+                  <div key={key}>
                     <button
-                      key={key}
                       className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent ${isSelected ? "bg-accent font-medium" : ""}`}
                       onClick={() => setSelectedKey(isSelected ? null : key)}
                     >
-                      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+                      <Icon className={`size-3.5 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                       <span className="min-w-0 flex-1 truncate">{schema.label}</span>
+                      <span className={`text-[10px] text-muted-foreground transition-transform ${isSelected ? "rotate-90" : ""}`}>›</span>
                     </button>
-                  );
-                })}
-              </ScrollArea>
-            )}
-          </div>
-          <ScrollArea className="min-h-0 flex-1">
-            {selectedKey && selectedProp ? (
-              <PropertySettings
-                propKey={selectedKey}
-                prop={selectedProp}
-                value={propValues[selectedKey]}
-                onUpdate={(updates) => updatePropDef(selectedKey, updates)}
-                onValueChange={(v) => handlePropChange(selectedKey, v)}
-                onDelete={() => handleRemoveProp(selectedKey)}
-                onClose={() => setSelectedKey(null)}
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-1.5 py-8 text-center">
-                <p className="text-[10px] text-muted-foreground">Select a property to edit.</p>
-              </div>
+                    {isSelected && (
+                      <InlinePropertySettings
+                        propKey={key}
+                        prop={schema}
+                        value={propValues[key]}
+                        onUpdate={(updates) => updatePropDef(key, updates)}
+                        onValueChange={(v) => handlePropChange(key, v)}
+                        onDelete={() => handleRemoveProp(key)}
+                      />
+                    )}
+                  </div>
+                );
+              })
             )}
           </ScrollArea>
         </div>
@@ -550,9 +538,10 @@ export default function ComponentEditorPage({
                   }`}
                   onClick={() => setRightTab(tab.value)}
                 >
-                  <tab.icon className="size-4" />
+                  <tab.icon className="size-3.5" />
+                  <span className="ml-1.5 text-[11px]">{tab.label}</span>
                   {rightTab === tab.value && (
-                    <span className="absolute bottom-0 left-1/2 h-[2px] w-5 -translate-x-1/2 rounded-full bg-primary" />
+                    <span className="absolute inset-x-0 bottom-0 h-[2px] bg-primary" />
                   )}
                 </button>
               ))}
@@ -686,43 +675,16 @@ function ElementSettingsPanel({
         </div>
       )}
 
-      <div className="space-y-1.5 border-b px-3 py-3">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Custom attributes
-          </p>
-          <Button variant="ghost" size="icon" className="size-5">
-            <Plus className="size-3" />
-          </Button>
-        </div>
-        <p className="text-[10px] text-muted-foreground">None</p>
-      </div>
-
-      <div className="space-y-3 px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Advanced</p>
-        <div className="flex items-start gap-2">
-          <Checkbox id="allow-edit" className="mt-0.5" />
-          <Label htmlFor="allow-edit" className="text-[10px] leading-tight font-normal text-muted-foreground">
-            Allow users to edit this element in edit mode and the Editor
-          </Label>
-        </div>
-        <div className="flex items-start gap-2">
-          <Checkbox id="exclude-search" className="mt-0.5" />
-          <Label htmlFor="exclude-search" className="text-[10px] leading-tight font-normal text-muted-foreground">
-            Exclude this element&apos;s content from site search results
-          </Label>
-        </div>
-      </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════
-   Property Settings Panel
+   Inline Property Settings (accordion row)
    ═══════════════════════════════════════════════ */
 
-function PropertySettings({
-  propKey, prop, value, onUpdate, onValueChange, onDelete, onClose,
+function InlinePropertySettings({
+  propKey, prop, value, onUpdate, onValueChange, onDelete,
 }: {
   propKey: string;
   prop: PropDef;
@@ -730,115 +692,61 @@ function PropertySettings({
   onUpdate: (updates: Partial<PropDef>) => void;
   onValueChange: (v: string | boolean | number) => void;
   onDelete: () => void;
-  onClose: () => void;
 }) {
   const typeLabel = PROP_TYPES.find((t) => t.type === prop.type)?.label || prop.type;
 
   return (
-    <div className="text-xs">
-      <div className="flex items-center justify-between bg-accent/50 px-3 py-2">
-        <span className="font-semibold">Property settings</span>
-        <Button variant="ghost" size="icon" className="size-5 text-muted-foreground" onClick={onClose}>
-          <X className="size-3" />
-        </Button>
+    <div className="border-b bg-accent/30 text-xs">
+      <div className="px-3 py-2">
+        <span className="text-xs font-semibold">Property settings</span>
       </div>
 
-      <div className="space-y-3 px-3 py-3">
-        <div className="flex items-center gap-3">
-          <Label className="w-14 shrink-0 text-[10px] text-muted-foreground">Name</Label>
+      <div className="border-t px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <Label className="w-12 shrink-0 text-[10px] text-muted-foreground">Name</Label>
           <Input className="h-7 flex-1 text-xs" value={prop.label} onChange={(e) => onUpdate({ label: e.target.value })} />
         </div>
-        <div className="flex items-center gap-3">
-          <Label className="w-14 shrink-0 text-[10px] text-muted-foreground">Group</Label>
-          <Input className="h-7 flex-1 text-xs" placeholder="Select or type to add..." value={prop.group} onChange={(e) => onUpdate({ group: e.target.value })} />
-        </div>
-        <div className="flex gap-3">
-          <Label className="w-14 shrink-0 pt-1.5 text-[10px] text-muted-foreground">Tooltip</Label>
-          <Textarea className="min-h-14 flex-1 resize-none text-xs" placeholder="Describe how to use this property..." value={prop.tooltip} onChange={(e) => onUpdate({ tooltip: e.target.value })} />
-        </div>
       </div>
 
-      <Separator />
-
-      <div className="px-3 py-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {typeLabel} settings
-        </p>
-        {prop.type === "text" && (
-          <div className="flex items-center gap-2">
-            <Checkbox id={`multiline-${propKey}`} checked={prop.multiline} onCheckedChange={(v) => onUpdate({ multiline: v === true })} />
-            <Label htmlFor={`multiline-${propKey}`} className="text-xs">Multiline</Label>
-          </div>
-        )}
-        {prop.type === "rich_text" && <p className="text-[10px] text-muted-foreground">Rich text content with formatting support.</p>}
-        {prop.type === "image" && <p className="text-[10px] text-muted-foreground">Consumers can swap the image source.</p>}
-        {prop.type === "link" && <p className="text-[10px] text-muted-foreground">URL and optional target configuration.</p>}
-        {prop.type === "video" && <p className="text-[10px] text-muted-foreground">Embed URL for video content.</p>}
-        {prop.type === "number" && <p className="text-[10px] text-muted-foreground">Numeric value. Consumers can override.</p>}
-        {prop.type === "switch" && <p className="text-[10px] text-muted-foreground">Toggle visibility or behavior on/off.</p>}
-      </div>
-
-      <Separator />
-
-      <div className="px-3 py-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Default {typeLabel}</p>
+      <div className="space-y-2 border-t px-3 py-2.5">
+        <p className="text-[10px] font-semibold">Default {typeLabel}</p>
         {(prop.type === "text" || prop.type === "rich_text") && (
-          <div className="flex items-center gap-3">
-            <Label className="w-10 shrink-0 text-[10px] text-muted-foreground">Text</Label>
+          <div className="flex items-center gap-2">
+            <Label className="w-12 shrink-0 text-[10px] text-muted-foreground">Text</Label>
             {prop.multiline ? (
-              <Textarea className="min-h-14 flex-1 resize-none text-xs" value={String(value ?? prop.default)} onChange={(e) => { onValueChange(e.target.value); onUpdate({ default: e.target.value }); }} />
+              <Textarea className="min-h-16 flex-1 resize-none text-xs" value={String(value ?? prop.default)} onChange={(e) => { onValueChange(e.target.value); onUpdate({ default: e.target.value }); }} />
             ) : (
               <Input className="h-7 flex-1 text-xs" value={String(value ?? prop.default)} onChange={(e) => { onValueChange(e.target.value); onUpdate({ default: e.target.value }); }} />
             )}
           </div>
         )}
         {prop.type === "image" && (
-          <div className="flex h-16 items-center justify-center rounded border-2 border-dashed bg-muted/30 text-[10px] text-muted-foreground">Click to upload default image</div>
+          <div className="flex h-14 items-center justify-center rounded border-2 border-dashed bg-muted/30 text-[10px] text-muted-foreground">Upload default image</div>
         )}
         {prop.type === "link" && (
-          <div className="flex items-center gap-3">
-            <Label className="w-10 shrink-0 text-[10px] text-muted-foreground">URL</Label>
+          <div className="flex items-center gap-2">
+            <Label className="w-12 shrink-0 text-[10px] text-muted-foreground">URL</Label>
             <Input className="h-7 flex-1 text-xs" placeholder="https://..." value={String(value ?? prop.default)} onChange={(e) => { onValueChange(e.target.value); onUpdate({ default: e.target.value }); }} />
           </div>
         )}
         {prop.type === "video" && (
-          <div className="flex items-center gap-3">
-            <Label className="w-10 shrink-0 text-[10px] text-muted-foreground">URL</Label>
+          <div className="flex items-center gap-2">
+            <Label className="w-12 shrink-0 text-[10px] text-muted-foreground">URL</Label>
             <Input className="h-7 flex-1 text-xs" placeholder="YouTube or Vimeo URL..." value={String(value ?? prop.default)} onChange={(e) => { onValueChange(e.target.value); onUpdate({ default: e.target.value }); }} />
           </div>
         )}
         {prop.type === "number" && (
-          <div className="flex items-center gap-3">
-            <Label className="w-10 shrink-0 text-[10px] text-muted-foreground">Value</Label>
+          <div className="flex items-center gap-2">
+            <Label className="w-12 shrink-0 text-[10px] text-muted-foreground">Value</Label>
             <Input className="h-7 flex-1 text-xs" type="number" value={String(value ?? prop.default)} onChange={(e) => { const n = Number(e.target.value) || 0; onValueChange(n); onUpdate({ default: n }); }} />
           </div>
         )}
         {prop.type === "switch" && (
-          <div className="flex items-center gap-3">
-            <Label className="text-[10px] text-muted-foreground">Default state</Label>
+          <div className="flex items-center gap-2">
+            <Label className="w-12 shrink-0 text-[10px] text-muted-foreground">State</Label>
             <Switch checked={Boolean(value ?? prop.default)} onCheckedChange={(v) => { onValueChange(v); onUpdate({ default: v }); }} />
           </div>
         )}
-      </div>
-
-      <Separator />
-
-      <div className="px-3 py-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Connections</p>
-        <div className="rounded-md border bg-muted/30 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">
-            Bound to component via prop key <code className="rounded bg-muted px-1 py-0.5 font-mono">{propKey}</code>
-          </p>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div className="px-3 py-3">
-        <Button variant="ghost" size="sm" className="h-7 w-full justify-center text-xs text-destructive hover:text-destructive" onClick={onDelete}>
-          <Trash2 className="mr-1.5 size-3" />
-          Delete Property
-        </Button>
       </div>
     </div>
   );

@@ -62,7 +62,7 @@ export default function VariablesPage({
         <Button variant="outline" asChild>
           <Link href="/libraries">
             <ArrowLeft className="mr-2 size-4" />
-            Back to Libraries
+            Back to Brand Libraries
           </Link>
         </Button>
       </div>
@@ -127,7 +127,7 @@ export default function VariablesPage({
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/libraries" className="hover:text-foreground">
-          Libraries
+          Brand Libraries
         </Link>
         <span>/</span>
         <Link

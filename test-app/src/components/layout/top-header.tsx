@@ -1,7 +1,8 @@
 "use client";
 
-import { Building2, ChevronDown, Monitor } from "lucide-react";
+import { Building2, ChevronDown, Menu } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -20,19 +21,20 @@ export function TopHeader() {
     .toUpperCase();
 
   return (
-    <header className="flex h-11 shrink-0 items-center justify-between bg-[#1b1b21] px-4">
+    <header className="relative z-20 flex h-11 shrink-0 items-center justify-between bg-[#1b1b21] px-4">
       <div className="flex items-center gap-4">
+        <MobileSidebarTrigger />
         <span className="text-sm font-semibold tracking-wide text-white">
           WIX <span className="font-light">STUDIO</span>
         </span>
-        <Avatar className="size-6 rounded-md">
+        <Avatar className="hidden size-6 rounded-md sm:flex">
           <AvatarFallback className="rounded-md bg-violet-600 text-white">
             <Building2 className="size-3.5" />
           </AvatarFallback>
         </Avatar>
-        <ChevronDown className="size-3 text-white/50" />
+        <ChevronDown className="hidden size-3 text-white/50 sm:block" />
 
-        <nav className="flex items-center gap-1">
+        <nav className="hidden items-center gap-1 md:flex">
           {["All Sites", "Resources", "Help"].map((label) => (
             <DropdownMenu key={label}>
               <DropdownMenuTrigger asChild>
@@ -50,9 +52,6 @@ export function TopHeader() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="rounded p-1.5 text-white/60 transition-colors hover:text-white">
-          <Monitor className="size-4" />
-        </button>
         <Avatar className="size-7 cursor-pointer">
           <AvatarFallback className="bg-primary text-[10px] text-white">
             {initials}
@@ -60,5 +59,20 @@ export function TopHeader() {
         </Avatar>
       </div>
     </header>
+  );
+}
+
+function MobileSidebarTrigger() {
+  const { toggleSidebar, isMobile } = useSidebar();
+
+  if (!isMobile) return null;
+
+  return (
+    <button
+      onClick={toggleSidebar}
+      className="rounded p-1 text-white/60 transition-colors hover:text-white"
+    >
+      <Menu className="size-5" />
+    </button>
   );
 }

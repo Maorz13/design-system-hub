@@ -1,7 +1,7 @@
 export type Plan = "starter" | "core" | "growth" | "freelancer" | "agency" | "enterprise";
 export type Role = "owner" | "admin" | "site_manager" | "designer" | "marketer" | "content_editor";
 export type SiteType = "source" | "consumer";
-export type VariableType = "color" | "size" | "font";
+export type VariableType = "color" | "size" | "font" | "text_style" | "percentage" | "number";
 
 export interface Workspace {
   id: string;
@@ -69,6 +69,7 @@ export interface DesignComponent {
   html_structure: string;
   css_styles: string;
   props_schema: ComponentPropSchema;
+  variants: number;
   created_at: string;
   updated_at: string;
 }

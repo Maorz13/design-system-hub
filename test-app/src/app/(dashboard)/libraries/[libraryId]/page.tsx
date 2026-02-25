@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback } from "react";
+import { use } from "react";
 import Link from "next/link";
 import {
   Paintbrush,
@@ -8,10 +8,7 @@ import {
   Globe,
   ArrowLeft,
   Upload,
-  Settings2,
-  Pencil,
-  Check,
-  X,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -36,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { RoleGate } from "@/components/shared/role-gate";
 import { LibraryStatusBadge } from "@/components/libraries/library-status-badge";
+import { BrandKitPanel } from "@/components/libraries/brand-kit-panel";
 import { ComponentPreview } from "@/components/component-builder/component-preview";
 import {
   getLibraryById,
@@ -44,8 +40,6 @@ import {
   getInstallationsByLibrary,
   MOCK_SITES,
 } from "@/lib/mock-data";
-import type { Variable } from "@/types/database";
-
 export default function LibraryDetailPage({
   params,
 }: {
@@ -53,7 +47,6 @@ export default function LibraryDetailPage({
 }) {
   const { libraryId } = use(params);
   const library = getLibraryById(libraryId);
-  const [activeTab, setActiveTab] = useState("overview");
 
   if (!library) {
     return (
@@ -62,30 +55,16 @@ export default function LibraryDetailPage({
         <Button variant="outline" asChild>
           <Link href="/libraries">
             <ArrowLeft className="mr-2 size-4" />
-            Back to Libraries
+            Back to Brand Libraries
           </Link>
         </Button>
       </div>
     );
   }
 
-  const [variables, setVariables] = useState(() => getVariablesByLibrary(library.id));
+  const variables = getVariablesByLibrary(library.id);
   const components = getComponentsByLibrary(library.id);
   const installations = getInstallationsByLibrary(library.id);
-
-  const colorVars = variables.filter((v) => v.type === "color");
-  const sizeVars = variables.filter((v) => v.type === "size");
-  const fontVars = variables.filter((v) => v.type === "font");
-
-  const handleVariableUpdate = useCallback(
-    (id: string, field: "value_default" | "value_dark", value: string) => {
-      setVariables((prev) =>
-        prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
-      );
-      toast.success("Variable updated");
-    },
-    []
-  );
 
   function handlePublish() {
     toast.success("Library published", {
@@ -97,201 +76,92 @@ export default function LibraryDetailPage({
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/libraries" className="hover:text-foreground">
-          Libraries
+          Brand Libraries
         </Link>
         <span>/</span>
         <span className="text-foreground">{library.name}</span>
       </div>
 
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">{library.name}</h1>
-          <p className="max-w-2xl text-muted-foreground">
-            {library.description}
-          </p>
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{library.name}</h1>
             <Badge variant="secondary">v{library.version}</Badge>
-            <span className="text-sm text-muted-foreground">
-              {installations.length} consumer{installations.length !== 1 && "s"}
-            </span>
           </div>
+          <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+            Manage brand properties and shared components shared with sites.
+          </p>
         </div>
         <RoleGate action="CREATE_LIBRARY">
-          <Button onClick={handlePublish}>
+          <Button onClick={handlePublish} className="w-full sm:w-auto">
             <Upload className="mr-2 size-4" />
             Publish Updates
           </Button>
         </RoleGate>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+      <Tabs defaultValue="variables">
+        <TabsList variant="line">
           <TabsTrigger value="variables">
             <Paintbrush className="mr-1 size-3" />
-            Brand Kit ({variables.length})
+            <span className="hidden sm:inline">Brand Properties</span>
+            <span className="sm:hidden">Kit</span>
           </TabsTrigger>
           <TabsTrigger value="components">
             <Component className="mr-1 size-3" />
-            Shared Components ({components.length})
+            <span className="hidden sm:inline">Shared Components ({components.length})</span>
+            <span className="sm:hidden">Components</span>
           </TabsTrigger>
           <TabsTrigger value="consumers">
             <Globe className="mr-1 size-3" />
-            Sites using library ({installations.length})
+            <span className="hidden sm:inline">Sites using library ({installations.length})</span>
+            <span className="sm:hidden">Sites</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Variables</CardTitle>
-                <Paintbrush className="size-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{variables.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  {colorVars.length} colors, {sizeVars.length} sizes,{" "}
-                  {fontVars.length} fonts
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Components
-                </CardTitle>
-                <Component className="size-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{components.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Shared building blocks
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Consumers
-                </CardTitle>
-                <Globe className="size-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {installations.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Sites using this library
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
         <TabsContent value="variables" className="space-y-6">
-          {colorVars.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Colors</CardTitle>
-                <CardDescription>Brand and UI color tokens.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {colorVars.map((v) => (
-                    <EditableVariableRow
-                      key={v.id}
-                      variable={v}
-                      onSave={handleVariableUpdate}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {sizeVars.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Sizes</CardTitle>
-                <CardDescription>Spacing and border-radius tokens.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {sizeVars.map((v) => (
-                    <EditableVariableRow
-                      key={v.id}
-                      variable={v}
-                      onSave={handleVariableUpdate}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {fontVars.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Fonts</CardTitle>
-                <CardDescription>Typography font-family tokens.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {fontVars.map((v) => (
-                    <EditableVariableRow
-                      key={v.id}
-                      variable={v}
-                      onSave={handleVariableUpdate}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <BrandKitPanel variables={variables} />
         </TabsContent>
 
-        <TabsContent value="components" className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {components.map((comp) => {
-              const propCount = Object.keys(comp.props_schema).length;
-              return (
-                <Card key={comp.id} className="flex flex-col">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{comp.name}</CardTitle>
-                      <Button variant="ghost" size="icon" className="size-8">
-                        <Settings2 className="size-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex flex-1 flex-col">
-                    <div className="flex-1">
-                      <ComponentPreview component={comp} scale="sm" />
-                    </div>
-                    <Separator className="my-3" />
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{propCount} props</span>
-                        <span>
-                          Updated{" "}
-                          {new Date(comp.updated_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                      <Button variant="secondary" size="sm" className="h-7 text-xs" asChild>
-                        <Link href={`/libraries/${library.id}/components/${comp.id}`}>
-                          Manage
-                        </Link>
-                      </Button>
+        <TabsContent value="components">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {components.map((comp) => (
+              <Link
+                key={comp.id}
+                href={`/libraries/${library.id}/components/${comp.id}`}
+                className="group"
+              >
+                <Card className="gap-3 py-3 overflow-hidden transition-colors hover:border-primary/50">
+                  <div className="flex h-[220px] items-center justify-center overflow-hidden border-b">
+                    <ComponentPreview component={comp} scale="sm" />
+                  </div>
+                  <CardContent className="flex items-center justify-between px-3 py-1.5">
+                    <span className="text-xs font-medium">{comp.name}</span>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <span>{Object.keys(comp.props_schema).length} props</span>
+                      <span>{comp.variants} variant{comp.variants !== 1 && "s"}</span>
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })}
+              </Link>
+            ))}
+            <RoleGate action="CREATE_LIBRARY">
+              <button
+                onClick={() =>
+                  toast("Coming soon", {
+                    description: "Component builder will be available in the next update.",
+                  })
+                }
+                className="group/add flex h-full min-h-[180px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 transition-colors hover:border-primary/50 hover:bg-muted/30"
+              >
+                <div className="flex size-10 items-center justify-center rounded-full bg-muted transition-colors group-hover/add:bg-primary/10">
+                  <Plus className="size-5 text-muted-foreground transition-colors group-hover/add:text-primary" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground transition-colors group-hover/add:text-foreground">
+                  Create Component
+                </span>
+              </button>
+            </RoleGate>
           </div>
         </TabsContent>
 
@@ -303,7 +173,7 @@ export default function LibraryDetailPage({
                 Sites that have installed this library.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -345,119 +215,6 @@ export default function LibraryDetailPage({
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function EditableVariableRow({
-  variable,
-  onSave,
-}: {
-  variable: Variable;
-  onSave: (id: string, field: "value_default" | "value_dark", value: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(variable.value_default);
-
-  function handleConfirm() {
-    if (draft.trim() && draft !== variable.value_default) {
-      onSave(variable.id, "value_default", draft.trim());
-    }
-    setEditing(false);
-  }
-
-  function handleCancel() {
-    setDraft(variable.value_default);
-    setEditing(false);
-  }
-
-  const isColor = variable.type === "color";
-  const isFont = variable.type === "font";
-
-  return (
-    <div className="flex items-center justify-between rounded-lg border p-3">
-      <div className="flex items-center gap-3">
-        {isColor && (
-          <div
-            className="size-8 shrink-0 rounded-md border"
-            style={{ backgroundColor: variable.value_default }}
-          />
-        )}
-        <div className="min-w-0">
-          <p className="text-sm font-medium">--{variable.key}</p>
-          {editing ? (
-            <div className="mt-1 flex items-center gap-1.5">
-              {isColor && (
-                <input
-                  type="color"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  className="size-7 cursor-pointer rounded border p-0.5"
-                />
-              )}
-              <Input
-                className="h-7 w-36 text-xs"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleConfirm();
-                  if (e.key === "Escape") handleCancel();
-                }}
-                autoFocus
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-6 text-green-600 hover:text-green-700"
-                onClick={handleConfirm}
-              >
-                <Check className="size-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-6 text-muted-foreground hover:text-destructive"
-                onClick={handleCancel}
-              >
-                <X className="size-3.5" />
-              </Button>
-            </div>
-          ) : (
-            <p
-              className="text-xs text-muted-foreground"
-              style={isFont ? { fontFamily: variable.value_default } : undefined}
-            >
-              {variable.value_default}
-            </p>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        {!editing && variable.value_dark && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">Dark:</span>
-            {isColor && (
-              <div
-                className="size-5 rounded border"
-                style={{ backgroundColor: variable.value_dark }}
-              />
-            )}
-            <span className="text-xs text-muted-foreground">
-              {variable.value_dark}
-            </span>
-          </div>
-        )}
-        {!editing && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground hover:text-foreground"
-            onClick={() => setEditing(true)}
-          >
-            <Pencil className="size-3.5" />
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

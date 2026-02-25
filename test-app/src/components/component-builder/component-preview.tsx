@@ -55,27 +55,53 @@ export function ComponentPreview({
   const tokens = useTokens(component.library_id);
   const props = resolveProps(component, propOverrides);
 
+  const tokenStyles = {
+    "--preview-primary": tokens["Primary Color"] || "#E46209",
+    "--preview-primary-hover": tokens["Primary Hover"] || "#CA3701",
+    "--preview-secondary": tokens["Dark background"] || "#1F1F1F",
+    "--preview-text": tokens["Text primary"] || "#3A3A37",
+    "--preview-muted": tokens["Text secondary"] || "#4B4B4B",
+    "--preview-placeholder": tokens["Text placeholder"] || "#61615E",
+    "--preview-bg": tokens["Background"] || "#FFFFFF",
+    "--preview-accent-bg": tokens["Accent background"] || "#F8F5EE",
+    "--preview-border": "#E5E7EB",
+    "--preview-btn-radius": tokens["Button border-radius"] || "12px",
+    "--preview-input-radius": tokens["Input border-radius"] || "100px",
+    "--preview-card-radius": tokens["Card border-radius"] || "8px",
+    "--preview-img-radius": tokens["Image border-radius"] || "24px",
+    "--preview-font-heading": tokens["Inter"] || "Inter, sans-serif",
+    "--preview-font-body": tokens["Poppins"] || "Poppins, sans-serif",
+    "--preview-h1": tokens["Heading 1"] || "48px",
+    "--preview-h2": tokens["Heading 2"] || "40px",
+    "--preview-h3": tokens["Heading 3"] || "24px",
+    "--preview-h4": tokens["Heading 4"] || "18px",
+    "--preview-p1": tokens["Paragraph 1"] || "18px",
+    "--preview-p2": tokens["Paragraph 2"] || "16px",
+    "--preview-p3": tokens["Paragraph 3"] || "14px",
+  } as React.CSSProperties;
+
+  if (scale === "sm" && !seamless) {
+    return (
+      <div
+        className="flex h-full w-full items-center overflow-hidden bg-white"
+        style={tokenStyles}
+      >
+        <div
+          className="w-full origin-left"
+          style={{ minWidth: "143%", transform: "scale(0.7)" }}
+        >
+          {renderPreview(component, scale, props, seamless, selectedElementId, onElementSelect, elementBindings)}
+        </div>
+      </div>
+    );
+  }
+
   const wrapperClass = seamless
     ? "w-full bg-white"
-    : `flex items-center justify-center rounded-lg border bg-white ${scale === "sm" ? "p-4" : "p-6"}`;
+    : "flex items-center justify-center rounded-lg border bg-white p-6";
 
   return (
-    <div
-      className={wrapperClass}
-      style={
-        {
-          "--preview-primary": tokens["brand-primary"] || "#0055FF",
-          "--preview-secondary": tokens["brand-secondary"] || "#6B21A8",
-          "--preview-text": tokens["text-primary"] || "#111827",
-          "--preview-muted": tokens["text-muted"] || "#6B7280",
-          "--preview-bg": tokens["surface-bg"] || "#FFFFFF",
-          "--preview-border": tokens["surface-border"] || "#E5E7EB",
-          "--preview-success": tokens["action-success"] || "#059669",
-          "--preview-danger": tokens["action-danger"] || "#DC2626",
-          "--preview-radius": tokens["radius-md"] || "8px",
-        } as React.CSSProperties
-      }
-    >
+    <div className={wrapperClass} style={tokenStyles}>
       {renderPreview(component, scale, props, seamless, selectedElementId, onElementSelect, elementBindings)}
     </div>
   );
@@ -161,6 +187,8 @@ function renderPreview(
 ) {
   const p: PreviewProps = { scale, props, sid, sel, bindings };
   switch (component.id) {
+    case "comp-btn-primary":
+      return <PrimaryButtonPreview {...p} />;
     case "comp-002":
       return <NavigationBarPreview {...p} />;
     case "comp-004":
@@ -180,6 +208,27 @@ function renderPreview(
   }
 }
 
+function PrimaryButtonPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
+  const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
+  const text = rc("el-btn-pri-text", String(props.button_text || "Get Started"));
+
+  return (
+    <div className="flex w-full items-center justify-center py-10" style={{ fontFamily: "var(--preview-font-body)" }}>
+      <SelectableElement elementId="el-btn-pri-text" selectedId={sid} onSelect={sel} label="Button">
+        <button
+          className={`px-5 py-2.5 font-semibold text-white ${scale === "sm" ? "text-xs" : "text-sm"}`}
+          style={{
+            backgroundColor: "var(--preview-primary)",
+            borderRadius: "var(--preview-btn-radius)",
+          }}
+        >
+          {text}
+        </button>
+      </SelectableElement>
+    </div>
+  );
+}
+
 function NavigationBarPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
   const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
   const rv = (id: string, fb: boolean) => resolveVisible(id, fb, bindings, props);
@@ -196,39 +245,43 @@ function NavigationBarPreview({ scale, props, sid, sel, bindings }: PreviewProps
   ];
 
   return (
-    <div className="w-full">
+    <div className="w-full" style={{ fontFamily: "var(--preview-font-body)" }}>
       <div
         className="flex items-center justify-between px-6 py-3"
         style={{ borderBottom: "1px solid var(--preview-border)" }}
       >
         <div className="flex items-center gap-3">
           <div
-            className="flex size-7 items-center justify-center rounded-md font-bold text-white"
-            style={{ backgroundColor: "var(--preview-primary)", fontSize: "10px" }}
+            className="flex size-7 items-center justify-center rounded-lg font-semibold"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--preview-primary) 12%, transparent)",
+              color: "var(--preview-primary)",
+              fontSize: "10px",
+            }}
           >
             {initial}
           </div>
-          <SelectableElement elementId="el-nav-logo" selectedId={sid} onSelect={sel} label="Logo Text">
-            <span className={`font-semibold ${textSize}`} style={{ color: "var(--preview-text)" }}>
+          <SelectableElement elementId="el-nav-logo" selectedId={sid} onSelect={sel} label="Heading">
+            <span className={`font-semibold ${textSize}`} style={{ color: "var(--preview-text)", fontFamily: "var(--preview-font-heading)" }}>
               {logoText}
             </span>
           </SelectableElement>
         </div>
         <div className="flex items-center gap-5">
           {navItems.map(({ name, id }) => (
-            <SelectableElement key={id} elementId={id} selectedId={sid} onSelect={sel} label={`Nav: ${name}`}>
+            <SelectableElement key={id} elementId={id} selectedId={sid} onSelect={sel} label="Link">
               <span className={textSize} style={{ color: "var(--preview-muted)" }}>
                 {rc(id, name)}
               </span>
             </SelectableElement>
           ))}
           {showCta && (
-            <SelectableElement elementId="el-nav-cta" selectedId={sid} onSelect={sel} label="CTA Button">
+            <SelectableElement elementId="el-nav-cta" selectedId={sid} onSelect={sel} label="Button">
               <button
-                className={`rounded-md px-3 py-1.5 font-medium text-white ${textSize}`}
+                className={`px-3 py-1.5 font-medium text-white ${textSize}`}
                 style={{
                   backgroundColor: "var(--preview-primary)",
-                  borderRadius: "var(--preview-radius)",
+                  borderRadius: "var(--preview-btn-radius)",
                 }}
               >
                 {rc("el-nav-cta", "Get Started")}
@@ -248,11 +301,9 @@ function HeroSectionPreview({ scale, props, sid, sel, bindings }: PreviewProps) 
   const subtitle = rc("el-hero-subtitle", String(props.subtitle || "Build something amazing."));
   const showCta = rv("el-hero-cta", props.show_cta as boolean);
   const ctaText = rc("el-hero-cta", String(props.cta_text || "Get Started"));
-  const headingSize = scale === "sm" ? "text-xl" : "text-3xl";
-  const textSize = scale === "sm" ? "text-[10px]" : "text-sm";
 
   return (
-    <div className="w-full py-16 text-center">
+    <div className="w-full py-16 text-center" style={{ fontFamily: "var(--preview-font-body)" }}>
       <div className="mx-auto max-w-lg space-y-5 px-6">
         <SelectableElement elementId="el-hero-badge" selectedId={sid} onSelect={sel} label="Badge">
           <span
@@ -266,42 +317,42 @@ function HeroSectionPreview({ scale, props, sid, sel, bindings }: PreviewProps) 
           </span>
         </SelectableElement>
 
-        <SelectableElement elementId="el-hero-title" selectedId={sid} onSelect={sel} label="Heading Large">
+        <SelectableElement elementId="el-hero-title" selectedId={sid} onSelect={sel} label="Heading">
           <h2
-            className={`font-bold leading-tight tracking-tight ${headingSize}`}
-            style={{ color: "var(--preview-text)" }}
+            className="font-bold leading-tight tracking-tight"
+            style={{ color: "var(--preview-text)", fontFamily: "var(--preview-font-heading)", fontSize: scale === "sm" ? "var(--preview-h3)" : "var(--preview-h1)" }}
           >
             {title}
           </h2>
         </SelectableElement>
 
-        <SelectableElement elementId="el-hero-subtitle" selectedId={sid} onSelect={sel} label="Paragraph">
-          <p className={`mx-auto max-w-md leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
+        <SelectableElement elementId="el-hero-subtitle" selectedId={sid} onSelect={sel} label="Text">
+          <p className="mx-auto max-w-md leading-relaxed" style={{ color: "var(--preview-muted)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p1)" }}>
             {subtitle}
           </p>
         </SelectableElement>
 
         {showCta && (
           <div className="flex items-center justify-center gap-3 pt-2">
-            <SelectableElement elementId="el-hero-cta" selectedId={sid} onSelect={sel} label="Primary Button">
+            <SelectableElement elementId="el-hero-cta" selectedId={sid} onSelect={sel} label="Button">
               <button
                 className={`px-5 py-2.5 font-semibold text-white ${scale === "sm" ? "text-xs" : "text-sm"}`}
                 style={{
                   backgroundColor: "var(--preview-primary)",
-                  borderRadius: "var(--preview-radius)",
+                  borderRadius: "var(--preview-btn-radius)",
                 }}
               >
                 {ctaText}
               </button>
             </SelectableElement>
 
-            <SelectableElement elementId="el-hero-secondary" selectedId={sid} onSelect={sel} label="Secondary Button">
+            <SelectableElement elementId="el-hero-secondary" selectedId={sid} onSelect={sel} label="Button">
               <button
                 className={`px-5 py-2.5 font-semibold ${scale === "sm" ? "text-xs" : "text-sm"}`}
                 style={{
                   color: "var(--preview-text)",
                   border: "1px solid var(--preview-border)",
-                  borderRadius: "var(--preview-radius)",
+                  borderRadius: "var(--preview-btn-radius)",
                 }}
               >
                 {rc("el-hero-secondary", "Learn More")}
@@ -322,13 +373,11 @@ function FeatureRowPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
   const description = rc("el-feat-desc", String(props.description || "Feature description goes here."));
   const imageRight = props.image_right as boolean;
   const showStep = rv("el-feat-step", props.show_step as boolean);
-  const textSize = scale === "sm" ? "text-[10px]" : "text-sm";
-  const headingSize = scale === "sm" ? "text-sm" : "text-xl";
 
   const textContent = (
-    <div className="space-y-3 px-6">
+    <div className="space-y-3 px-6" style={{ fontFamily: "var(--preview-font-body)" }}>
       {showStep && (
-        <SelectableElement elementId="el-feat-step" selectedId={sid} onSelect={sel} label="Step Badge">
+        <SelectableElement elementId="el-feat-step" selectedId={sid} onSelect={sel} label="Badge">
           <span
             className={`inline-block rounded-full px-2.5 py-0.5 font-semibold ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
             style={{
@@ -341,19 +390,19 @@ function FeatureRowPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
         </SelectableElement>
       )}
 
-      <SelectableElement elementId="el-feat-title" selectedId={sid} onSelect={sel} label="Feature Title">
-        <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
+      <SelectableElement elementId="el-feat-title" selectedId={sid} onSelect={sel} label="Heading">
+        <h3 className="font-bold" style={{ color: "var(--preview-text)", fontFamily: "var(--preview-font-heading)", fontSize: scale === "sm" ? "var(--preview-h5)" : "var(--preview-h3)" }}>
           {title}
         </h3>
       </SelectableElement>
 
-      <SelectableElement elementId="el-feat-desc" selectedId={sid} onSelect={sel} label="Description">
-        <p className={`leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
+      <SelectableElement elementId="el-feat-desc" selectedId={sid} onSelect={sel} label="Text">
+        <p className="leading-relaxed" style={{ color: "var(--preview-muted)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p2)" }}>
           {description}
         </p>
       </SelectableElement>
 
-      <SelectableElement elementId="el-feat-link" selectedId={sid} onSelect={sel} label="Learn More Link">
+      <SelectableElement elementId="el-feat-link" selectedId={sid} onSelect={sel} label="Link">
         <div className="flex items-center gap-1.5 pt-1">
           <span
             className={`font-semibold ${scale === "sm" ? "text-[10px]" : "text-xs"}`}
@@ -368,12 +417,13 @@ function FeatureRowPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
   );
 
   const visualContent = (
-    <SelectableElement elementId="el-feat-image" selectedId={sid} onSelect={sel} label="Feature Image">
+    <SelectableElement elementId="el-feat-image" selectedId={sid} onSelect={sel} label="Image">
       <div
-        className="mx-6 aspect-[4/3] rounded-lg"
+        className="mx-6 aspect-[4/3]"
         style={{
           background: `linear-gradient(135deg, color-mix(in srgb, var(--preview-primary) 15%, transparent), color-mix(in srgb, var(--preview-secondary) 15%, transparent))`,
           border: "1px solid var(--preview-border)",
+          borderRadius: "var(--preview-img-radius)",
         }}
       >
         <div className="flex h-full flex-col items-center justify-center gap-2 p-4 opacity-40">
@@ -408,8 +458,6 @@ function FeaturesGridPreview({ scale, props, sid, sel, bindings }: PreviewProps)
   const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
   const sectionTitle = rc("el-grid-title", String(props.title || "Why choose us"));
   const sectionSubtitle = rc("el-grid-subtitle", String(props.subtitle || "Everything you need to scale."));
-  const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
-  const headingSize = scale === "sm" ? "text-sm" : "text-xl";
 
   const cards = [
     { title: rc("el-grid-c1-title", String(props.card_1_title)), desc: rc("el-grid-c1-desc", String(props.card_1_desc)), icon: Zap, titleId: "el-grid-c1-title", descId: "el-grid-c1-desc" },
@@ -418,16 +466,16 @@ function FeaturesGridPreview({ scale, props, sid, sel, bindings }: PreviewProps)
   ];
 
   return (
-    <div className="w-full py-12">
+    <div className="w-full py-12" style={{ fontFamily: "var(--preview-font-body)" }}>
       <div className="mx-auto max-w-lg space-y-2 px-6 pb-8 text-center">
-        <SelectableElement elementId="el-grid-title" selectedId={sid} onSelect={sel} label="Section Title">
-          <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
+        <SelectableElement elementId="el-grid-title" selectedId={sid} onSelect={sel} label="Heading">
+          <h3 className="font-bold" style={{ color: "var(--preview-text)", fontFamily: "var(--preview-font-heading)", fontSize: scale === "sm" ? "var(--preview-h5)" : "var(--preview-h3)" }}>
             {sectionTitle}
           </h3>
         </SelectableElement>
 
-        <SelectableElement elementId="el-grid-subtitle" selectedId={sid} onSelect={sel} label="Section Subtitle">
-          <p className={textSize} style={{ color: "var(--preview-muted)" }}>
+        <SelectableElement elementId="el-grid-subtitle" selectedId={sid} onSelect={sel} label="Text">
+          <p style={{ color: "var(--preview-muted)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p2)" }}>
             {sectionSubtitle}
           </p>
         </SelectableElement>
@@ -437,10 +485,11 @@ function FeaturesGridPreview({ scale, props, sid, sel, bindings }: PreviewProps)
         {cards.map((card) => (
           <div
             key={card.titleId}
-            className="space-y-3 rounded-lg p-5"
+            className="space-y-3 p-5"
             style={{
               border: "1px solid var(--preview-border)",
               backgroundColor: "var(--preview-bg)",
+              borderRadius: "var(--preview-card-radius)",
             }}
           >
             <div
@@ -452,17 +501,17 @@ function FeaturesGridPreview({ scale, props, sid, sel, bindings }: PreviewProps)
               <card.icon className="size-4" style={{ color: "var(--preview-primary)" }} />
             </div>
 
-            <SelectableElement elementId={card.titleId} selectedId={sid} onSelect={sel} label={card.title}>
+            <SelectableElement elementId={card.titleId} selectedId={sid} onSelect={sel} label="Heading">
               <h4
-                className={`font-semibold ${scale === "sm" ? "text-[10px]" : "text-sm"}`}
-                style={{ color: "var(--preview-text)" }}
+                className="font-semibold"
+                style={{ color: "var(--preview-text)", fontFamily: "var(--preview-font-heading)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-h5)" }}
               >
                 {card.title}
               </h4>
             </SelectableElement>
 
-            <SelectableElement elementId={card.descId} selectedId={sid} onSelect={sel} label="Description">
-              <p className={`leading-relaxed ${textSize}`} style={{ color: "var(--preview-muted)" }}>
+            <SelectableElement elementId={card.descId} selectedId={sid} onSelect={sel} label="Text">
+              <p className="leading-relaxed" style={{ color: "var(--preview-muted)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p3)" }}>
                 {card.desc}
               </p>
             </SelectableElement>
@@ -475,7 +524,6 @@ function FeaturesGridPreview({ scale, props, sid, sel, bindings }: PreviewProps)
 
 function StatsSectionPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
   const rc = (id: string, fb: string) => resolveContent(id, fb, bindings, props);
-  const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
   const stats = [
     { value: rc("el-stat-1-val", String(props.stat_1_value)), label: rc("el-stat-1-lbl", String(props.stat_1_label)), valId: "el-stat-1-val", lblId: "el-stat-1-lbl" },
     { value: rc("el-stat-2-val", String(props.stat_2_value)), label: rc("el-stat-2-lbl", String(props.stat_2_label)), valId: "el-stat-2-val", lblId: "el-stat-2-lbl" },
@@ -487,19 +535,20 @@ function StatsSectionPreview({ scale, props, sid, sel, bindings }: PreviewProps)
       className="w-full py-12"
       style={{
         background: `linear-gradient(135deg, var(--preview-primary), var(--preview-secondary))`,
+        fontFamily: "var(--preview-font-body)",
       }}
     >
       <div className="grid grid-cols-3 gap-6 px-6 text-center">
         {stats.map((stat) => (
           <div key={stat.valId} className="space-y-1">
-            <SelectableElement elementId={stat.valId} selectedId={sid} onSelect={sel} label={`${stat.value}`}>
-              <p className={`font-bold text-white ${scale === "sm" ? "text-xl" : "text-3xl"}`}>
+            <SelectableElement elementId={stat.valId} selectedId={sid} onSelect={sel} label="Heading">
+              <p className="font-bold text-white" style={{ fontFamily: "var(--preview-font-heading)", fontSize: scale === "sm" ? "var(--preview-h3)" : "var(--preview-h1)" }}>
                 {stat.value}
               </p>
             </SelectableElement>
 
-            <SelectableElement elementId={stat.lblId} selectedId={sid} onSelect={sel} label="Stat Label">
-              <p className={`text-white/75 ${textSize}`}>{stat.label}</p>
+            <SelectableElement elementId={stat.lblId} selectedId={sid} onSelect={sel} label="Text">
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p2)" }}>{stat.label}</p>
             </SelectableElement>
           </div>
         ))}
@@ -515,34 +564,32 @@ function CTABannerPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
   const subtitle = rc("el-cta-subtitle", String(props.subtitle || "Join thousands of teams using our platform."));
   const ctaText = rc("el-cta-btn", String(props.cta_text || "Start Free Trial"));
   const showSecondary = rv("el-cta-secondary", props.show_secondary_cta as boolean);
-  const headingSize = scale === "sm" ? "text-lg" : "text-2xl";
-  const textSize = scale === "sm" ? "text-[10px]" : "text-sm";
 
   return (
     <div
       className="w-full py-16 text-center"
-      style={{ backgroundColor: "color-mix(in srgb, var(--preview-primary) 6%, white)" }}
+      style={{ backgroundColor: "var(--preview-accent-bg)", fontFamily: "var(--preview-font-body)" }}
     >
       <div className="mx-auto max-w-md space-y-4 px-6">
-        <SelectableElement elementId="el-cta-title" selectedId={sid} onSelect={sel} label="Headline">
-          <h3 className={`font-bold ${headingSize}`} style={{ color: "var(--preview-text)" }}>
+        <SelectableElement elementId="el-cta-title" selectedId={sid} onSelect={sel} label="Heading">
+          <h3 className="font-bold" style={{ color: "var(--preview-text)", fontFamily: "var(--preview-font-heading)", fontSize: scale === "sm" ? "var(--preview-h4)" : "var(--preview-h2)" }}>
             {title}
           </h3>
         </SelectableElement>
 
-        <SelectableElement elementId="el-cta-subtitle" selectedId={sid} onSelect={sel} label="Subtitle">
-          <p className={textSize} style={{ color: "var(--preview-muted)" }}>
+        <SelectableElement elementId="el-cta-subtitle" selectedId={sid} onSelect={sel} label="Text">
+          <p style={{ color: "var(--preview-muted)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p2)" }}>
             {subtitle}
           </p>
         </SelectableElement>
 
         <div className="flex items-center justify-center gap-3 pt-2">
-          <SelectableElement elementId="el-cta-btn" selectedId={sid} onSelect={sel} label="Primary Button">
+          <SelectableElement elementId="el-cta-btn" selectedId={sid} onSelect={sel} label="Button">
             <button
               className={`px-5 py-2.5 font-semibold text-white ${scale === "sm" ? "text-xs" : "text-sm"}`}
               style={{
                 backgroundColor: "var(--preview-primary)",
-                borderRadius: "var(--preview-radius)",
+                borderRadius: "var(--preview-btn-radius)",
               }}
             >
               {ctaText}
@@ -550,13 +597,13 @@ function CTABannerPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
           </SelectableElement>
 
           {showSecondary && (
-            <SelectableElement elementId="el-cta-secondary" selectedId={sid} onSelect={sel} label="Secondary Button">
+            <SelectableElement elementId="el-cta-secondary" selectedId={sid} onSelect={sel} label="Button">
               <button
                 className={`px-5 py-2.5 font-semibold ${scale === "sm" ? "text-xs" : "text-sm"}`}
                 style={{
                   color: "var(--preview-text)",
                   border: "1px solid var(--preview-border)",
-                  borderRadius: "var(--preview-radius)",
+                  borderRadius: "var(--preview-btn-radius)",
                 }}
               >
                 {rc("el-cta-secondary", "Contact Sales")}
@@ -575,7 +622,6 @@ function FooterPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
   const companyName = rc("el-footer-name", String(props.company_name || "Acme"));
   const tagline = rc("el-footer-tagline", String(props.tagline || "Build something amazing."));
   const showSocial = rv("el-footer-social", props.show_social as boolean);
-  const textSize = scale === "sm" ? "text-[10px]" : "text-xs";
   const initial = companyName.charAt(0).toUpperCase();
 
   const columns = [
@@ -586,28 +632,31 @@ function FooterPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
   ];
 
   return (
-    <div className="w-full" style={{ backgroundColor: "var(--preview-text)" }}>
+    <div className="w-full" style={{ backgroundColor: "var(--preview-secondary)", fontFamily: "var(--preview-font-body)" }}>
       <div className="space-y-8 px-6 py-10">
         <div className="grid grid-cols-5 gap-6">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div
-                className="flex size-6 items-center justify-center rounded-md text-[9px] font-bold text-white"
-                style={{ backgroundColor: "var(--preview-primary)" }}
+                className="flex size-6 items-center justify-center rounded-lg text-[9px] font-semibold"
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--preview-primary) 15%, transparent)",
+                  color: "var(--preview-primary)",
+                }}
               >
                 {initial}
               </div>
-              <SelectableElement elementId="el-footer-name" selectedId={sid} onSelect={sel} label="Company Name">
-                <span className={`font-semibold text-white ${textSize}`}>{companyName}</span>
+              <SelectableElement elementId="el-footer-name" selectedId={sid} onSelect={sel} label="Heading">
+                <span className="font-semibold text-white" style={{ fontFamily: "var(--preview-font-heading)", fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p3)" }}>{companyName}</span>
               </SelectableElement>
             </div>
 
-            <SelectableElement elementId="el-footer-tagline" selectedId={sid} onSelect={sel} label="Tagline">
-              <p className={`leading-relaxed text-white/50 ${textSize}`}>{tagline}</p>
+            <SelectableElement elementId="el-footer-tagline" selectedId={sid} onSelect={sel} label="Text">
+              <p className="leading-relaxed text-white/50" style={{ fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p3)" }}>{tagline}</p>
             </SelectableElement>
 
             {showSocial && (
-              <SelectableElement elementId="el-footer-social" selectedId={sid} onSelect={sel} label="Social Links">
+              <SelectableElement elementId="el-footer-social" selectedId={sid} onSelect={sel} label="Container">
                 <div className="flex gap-3 pt-1">
                   {[Twitter, Github, Linkedin, Globe].map((Icon, i) => (
                     <Icon key={i} className="size-3.5 text-white/40" />
@@ -618,10 +667,10 @@ function FooterPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
           </div>
           {columns.map((col) => (
             <div key={col.title} className="space-y-3">
-              <p className={`font-semibold text-white/70 ${textSize}`}>{col.title}</p>
+              <p className="font-semibold text-white/70" style={{ fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p3)" }}>{col.title}</p>
               <div className="space-y-2">
                 {col.items.map((item) => (
-                  <p key={item} className={`text-white/40 ${textSize}`}>
+                  <p key={item} className="text-white/40" style={{ fontSize: scale === "sm" ? "var(--preview-p3)" : "var(--preview-p3)" }}>
                     {item}
                   </p>
                 ))}
@@ -633,12 +682,12 @@ function FooterPreview({ scale, props, sid, sel, bindings }: PreviewProps) {
           className="flex items-center justify-between border-t pt-6"
           style={{ borderColor: "rgba(255,255,255,0.1)" }}
         >
-          <p className={`text-white/30 ${textSize}`}>
+          <p className="text-white/30" style={{ fontSize: "var(--preview-p3)" }}>
             &copy; 2026 {companyName}. All rights reserved.
           </p>
           <div className="flex gap-4">
             {["Privacy", "Terms", "Cookies"].map((item) => (
-              <span key={item} className={`text-white/30 ${textSize}`}>
+              <span key={item} className="text-white/30" style={{ fontSize: "var(--preview-p3)" }}>
                 {item}
               </span>
             ))}

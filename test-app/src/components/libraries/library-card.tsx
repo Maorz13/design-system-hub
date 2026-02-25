@@ -1,14 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Library, Component, Paintbrush, Globe } from "lucide-react";
+import { Component, Globe, Paintbrush } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   getComponentsByLibrary,
@@ -29,34 +26,42 @@ export function LibraryCard({ library }: LibraryCardProps) {
   return (
     <Link href={`/libraries/${library.id}`}>
       <Card className="transition-colors hover:border-primary/50">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex size-9 items-center justify-center rounded-md bg-primary/10">
-                <Library className="size-4 text-primary" />
-              </div>
-              <CardTitle className="text-base">{library.name}</CardTitle>
+        <CardContent className="py-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
+              style={{
+                backgroundColor: "color-mix(in srgb, #E46209 12%, transparent)",
+                color: "#E46209",
+              }}
+            >
+              {library.name.charAt(0)}
             </div>
-            <Badge variant="secondary">v{library.version}</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
-            {library.description}
-          </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Component className="size-3" />
-              {components.length} components
-            </span>
-            <span className="flex items-center gap-1">
-              <Paintbrush className="size-3" />
-              {variables.length} tokens
-            </span>
-            <span className="flex items-center gap-1">
-              <Globe className="size-3" />
-              {installations.length} sites
-            </span>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="truncate text-sm font-semibold">{library.name}</span>
+                <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">
+                  v{library.version}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Component className="size-3.5" />
+                  <span className="font-medium">{components.length}</span>
+                  components
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Paintbrush className="size-3.5" />
+                  <span className="font-medium">{variables.length}</span>
+                  variable{variables.length !== 1 && "s"}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Globe className="size-3.5" />
+                  <span className="font-medium">{installations.length}</span>
+                  connected site{installations.length !== 1 && "s"}
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -18,11 +18,11 @@ export default function LibrariesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Libraries</h1>
-          <p className="text-muted-foreground">
-            Manage your shared design libraries.
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Brand Libraries</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            Manage your shared brand libraries.
           </p>
         </div>
         <RoleGate action="CREATE_LIBRARY">
@@ -33,11 +33,11 @@ export default function LibrariesPage() {
       {libraries.length === 0 ? (
         <EmptyState
           icon={LibraryIcon}
-          title="No libraries yet"
-          description="Create your first shared library to start distributing components and tokens."
+          title="No brand libraries yet"
+          description="Create your first brand library to start distributing components and tokens."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2">
           {libraries.map((lib) => (
             <LibraryCard key={lib.id} library={lib} />
           ))}

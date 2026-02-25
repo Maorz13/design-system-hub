@@ -6,7 +6,6 @@ import {
   Settings,
   ChevronUp,
   LogOut,
-  Building2,
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { ROLE_LABELS } from "@/lib/constants/roles";
@@ -40,7 +39,7 @@ interface NavItem {
 const MAIN_NAV: NavItem[] = [
   { title: "Home", href: "/" },
   { title: "Sites", href: "/sites" },
-  { title: "Libraries", href: "/libraries" },
+  { title: "Brand Libraries", href: "/libraries" },
   { title: "Custom Templates", href: "#" },
   { title: "Custom Apps", href: "#" },
   { title: "Media", href: "#" },
@@ -69,7 +68,7 @@ function NavGroup({ items }: { items: NavItem[] }) {
       {items.map((item) => {
         const isActive =
           pathname === item.href ||
-          (item.href !== "/sites" && item.href !== "#" && pathname.startsWith(item.href));
+          (item.href !== "/" && item.href !== "#" && pathname.startsWith(item.href));
 
         return (
           <SidebarMenuItem key={item.title}>
@@ -95,10 +94,16 @@ export function AppSidebar() {
     .toUpperCase();
 
   return (
-    <Sidebar collapsible="none" className="border-r" style={{ "--sidebar-width": "228px" } as React.CSSProperties}>
+    <Sidebar collapsible="offcanvas" className="border-r !top-11 !h-[calc(100svh-2.75rem)]" style={{ "--sidebar-width": "228px" } as React.CSSProperties}>
       <SidebarHeader className="items-center px-4 py-[30px]">
-        <div className="flex size-14 items-center justify-center rounded-lg bg-muted">
-          <Building2 className="size-6 text-muted-foreground" />
+        <div
+          className="flex size-14 items-center justify-center rounded-lg text-lg font-semibold"
+          style={{
+            backgroundColor: "color-mix(in srgb, #E46209 12%, transparent)",
+            color: "#E46209",
+          }}
+        >
+          A
         </div>
       </SidebarHeader>
 
